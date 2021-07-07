@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1625595892911.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3817476604",
+    "id" : "A50AEEC4",
+    "lastKnownWriteTime" : 1625597600,
+    "last_content_update" : 1625602649190,
+    "path" : "~/Documents/GitHub/Das_et_al_2022a/scripts/load_published_data/dump_raw_reads.sh",
+    "project_path" : "scripts/load_published_data/dump_raw_reads.sh",
+    "properties" : {
+        "cursorPosition" : "29,8",
+        "scrollLine" : "1",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "sh"
+}
