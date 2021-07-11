@@ -27,9 +27,4 @@ wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/001/272/575/GCA_001272575.2_AS
 gunzip GCA_001272575.2_ASM127257v2_genomic.fna.gz
 gunzip GCA_001272575.2_ASM127257v2_genomic.gff.gz
 
-# Run Supermapper
-# SE dataset example with genome index step
-# supermapper_RNA -s -a SRR10959106 -r GCA_012980515.1_Ophcf2_genomic.fna -g GCA_012980515.1_Ophcf2_genomic.gff -n 11 -t 16 -o SRR10959106
-
-# PE dataset (omit -s parameter) example without genome index step
-# supermapper_RNA -a SRR11548639 -r GCA_012980515.1_Ophcf2_genomic.fna -t 16 -o SRR11548639
+# TO DO:
