@@ -10,13 +10,29 @@ module load samtools
 
 ### STEP: Trimming 
 #
-# TO DO: ADD A CODE CHUNK HERE TO ELIMINATE ADAPTER SEQUENCES AND LOW-QUALITY READS
-# (use Trimmomatic or Cutadapt or BBDuk)
+# TO DO: AD LOOP FOR TO INCLUDE ALL SAMPLES?
+#
+## Adapter trim and quality trim in one run
+bbduk.sh -Xmx1g in1=<r1.fq> in2=<r2.fq> out1=<clean1.fq> out2=<clean2.fq> minlen=25 qtrim=rl trimq=10 ktrim=r k=25 mink=11 ref=truseq.fq.gz hdist=1
+# "gtrim=10" will quality trim at Q10 using Phred algorithm, "qtrim=rl" will trim right and left sides
+# "ref=truseq.fq.gz" included Illumina truseq adapters within BBMap package
+# "hdist=1" allows one mismatch, "k=25" is k-mer size of 25, "mink=11" allow shorter k-mers of 11 at end of read
+# default looks at reverse-complement and forward seuence of refseq otherwise "rcomp=<t/r>"
+# "-Xmx1g" flag tells BBDuk to use 1GB of RAM
+#
+## Or split into adapter trimming first
+bbduk.sh -Xmx1g in=<reads.fq> out=<clean_A.fq> ref=<adapters.fa> ktrim=r k=23 mink=11 hdist=1 tpe tbo
+# "tbo" (trim adapters based on pair overlap detection) and "tpe" (both reads to the same length) flags for normal paired-end fragment libraries
+#
+## Then quality trimming
+bbduk.sh -Xmx1g in=<clean_A.fq> out=<clean_AQ.fq> qtrim=rl trimq=10
 #
 ### chunk ends
 
 
 ### 01_Code_Chunk: Aligning reads 
+#
+# TO DO: ALTER FOR FUNGAL GENOME, BOTH OPHIO AND BBAS
 #
 # index the ant genome, in parent dir
 hisat2-build -f camp_genome.fna camp_index
