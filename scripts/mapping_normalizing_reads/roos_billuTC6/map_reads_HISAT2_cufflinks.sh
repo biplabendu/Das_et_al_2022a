@@ -6,6 +6,7 @@
 module load hisat2
 module load cufflinks
 module load samtools
+module load bbmap
 
 
 ### STEP: Trimming 
@@ -33,6 +34,10 @@ bbduk.sh -Xmx1g in=<clean_A.fq> out=<clean_AQ.fq> qtrim=rl trimq=10
 ### 01_Code_Chunk: Aligning reads 
 #
 # TO DO: ALTER FOR FUNGAL GENOME, BOTH OPHIO AND BBAS
+#
+# Things to download:
+# 01: Genome: camp_genome.fna
+# 02: Annotation file: GCF_003227725.1_Cflo_v7.5_genomic.gff
 #
 # index the ant genome, in parent dir
 hisat2-build -f camp_genome.fna camp_index
@@ -68,6 +73,6 @@ samtools sort -o ./4F_time5_1.bam ./4F_time5_1.sam
 #
 cuffdiff -o Foragers -b "/home/billu/cflo_genome/camp_genome.fna" -p 16 -u "/home/billu/cflo_genome/GCF_003227725.1_Cflo_v7.5_genomic.gff" \2F_time5_1.bam \4F_time5_1.bam
 #
-# TO DO: Check HTSeq-based TMM normalization instead of Cuffdiff-based FPKM normalization
+# TO DO: Check HTSeq-based TMM normalization instead of Cuffdiff-based FPKM/RPKM normalization
 #
 ### chunk ends
