@@ -39,7 +39,7 @@ bbduk.sh \
 	mink=11 \
 	hdist=1 \
 	tpe \
-	tbo
+	tbo	
 # "tbo" (trim adapters based on pair overlap detection) and "tpe" (both reads to the same length) flags for normal paired-end fragment libraries
 #
 ## Then quality trimming
@@ -50,6 +50,7 @@ bbduk.sh \
 	out=./../trimmed_reads/trimmed_AQ_${file} \
 	qtrim=rl \
 	trimq=10
+done
 #
 # remove all the trimmed_A_* files
 rm ./../trimmed_reads/trimmed_A_*
@@ -66,4 +67,3 @@ cd /home/billu/TC6/data/trimmed_reads/
 fastqc -o ./output_fastqc *fastq.gz
 #
 ### chunk ends
-
