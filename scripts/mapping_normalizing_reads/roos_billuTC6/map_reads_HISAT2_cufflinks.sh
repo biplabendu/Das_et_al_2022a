@@ -8,6 +8,14 @@ module load cufflinks
 module load samtools
 module load bbmap
 
+# set directory
+# for Roos
+cd /home/fg/r_brouns/ant_fungus/TC6/data/raw_seq_reads/
+# for Billu
+# cd /home/billu/TC6/data/raw_seq_reads/
+
+# set path
+path = /home/fg/r_brouns/ant_fungus/TC6/data/
 
 ### STEP: Trimming 
 #
@@ -35,27 +43,34 @@ bbduk.sh -Xmx1g in=<clean_A.fq> out=<clean_AQ.fq> qtrim=rl trimq=10
 #
 # TO DO: ALTER FOR FUNGAL GENOME, BOTH OPHIO AND BBAS.
 #
-# Things to download:
-# 01: Genome: camp_genome.fna
-# 02: Annotation file: GCF_003227725.1_Cflo_v7.5_genomic.gff
+# Things to download from NCBI webstite, unzip, and rename:
+# 01: Genome: Ophcf2_genome.fna
+wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/012/980/515/GCA_012980515.1_Ophcf2/GCA_012980515.1_Ophcf2_genomic.fna.gz
+gzip -d GCA_012980515.1_Ophcf2_genomic.fna.gz
+mv GCA_012980515.1_Ophcf2_genomic.fna ophcf2_genome.fna
+# 02: Annotation file: Ophcf2_genome.gff
+wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/012/980/515/GCA_012980515.1_Ophcf2/GCA_012980515.1_Ophcf2_genomic.gff.gz
+gzip -d GCA_012980515.1_Ophcf2_genomic.gff.gz
+mv GCA_012980515.1_Ophcf2_genomic.gff ophcf2_genome.gff
 #
-# index the ant genome, in parent dir
-hisat2-build -f camp_genome.fna camp_index
+## index the Ophio genome, in parent dir (seems redundant)
+# hisat2-build -f ophcf2_genome.fna ophcf2_index 
+# "-f" for input are FASTA files
 #
-# fresh ant index, with exons
-gffread "/home/billu/cflo_genome/GCF_003227725.1_Cflo_v7.5_genomic.gff" -T -o camp.gtf
-hisat2_extract_splice_sites.py "/home/billu/cflo_genome/camp.gtf" > camp_splicesites.txt
-hisat2_extract_exons.py "/home/billu/cflo_genome/camp.gtf" > camp_exons.txt
+# fresh ophio index, with exons
+gffread "ophcf2_genome.gff" -T -o ophcf2.gtf
+hisat2_extract_splice_sites.py "ophcf2.gtf" > ophcf2_splicesites.txt
+hisat2_extract_exons.py "ophc2.gtf" > ophcf2_exons.txt
 #
-# echo "BUILDING THE ANT INDEX WITH SPLICE AND EXONS SITE"
+# echo "BUILDING THE OPHIO INDEX WITH SPLICE AND EXONS SITE"
 # index the exon site version of the ANT genome
-hisat2-build -f --ss camp_splicesites.txt --exon camp_exons.txt ./camp_genome.fna camp_exons_index
+hisat2-build -f --ss ophcf2_splicesites.txt --exon ophcf2_exons.txt ophcf2_genome.fna ophcf2_exons_index
 #
 # map timecourse rnaseq samples to (indexed) genome
 #
 ### TO DO: MAKE A LOOP TO INDIVIDUALLY MAP ALL RNASEQ SAMPLES TO THE GENOME
 #
-hisat2 -p 8 --new-summary -q --dta-cufflinks -x /home/billu/cflo_genome/camp_exons_index -U /home/billu/TC5_seq_reads/Foragers/Trimmed-2F_Galaxy96.fastq.gz -S /home/billu/TC5_seq_reads/2F_time5_1.sam
+hisat2 -p 8 --new-summary -q --dta-cufflinks -x ophcf2_exons_index -U ${path}/trimmed_reads/trimmed_AQ_TC6-02A_ATCACG.fastq.gz -S ${path}/mapped_TC6-02A_ATCACG.sam
 #
 ### chunk ends
 
