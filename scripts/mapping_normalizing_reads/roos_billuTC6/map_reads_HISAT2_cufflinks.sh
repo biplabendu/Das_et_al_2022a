@@ -33,7 +33,7 @@ bbduk.sh -Xmx1g in=<clean_A.fq> out=<clean_AQ.fq> qtrim=rl trimq=10
 
 ### 01_Code_Chunk: Aligning reads 
 #
-# TO DO: ALTER FOR FUNGAL GENOME, BOTH OPHIO AND BBAS
+# TO DO: ALTER FOR FUNGAL GENOME, BOTH OPHIO AND BBAS.
 #
 # Things to download:
 # 01: Genome: camp_genome.fna
