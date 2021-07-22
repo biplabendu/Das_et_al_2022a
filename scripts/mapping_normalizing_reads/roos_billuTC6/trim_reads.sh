@@ -31,7 +31,7 @@ do
 bbduk.sh \
 	-Xmx1g \
 	in1=${file} \
-	out1=./../trimmed_reads/trimmed_A_${file} \
+	out1=./../trimmed_reads/ophio/trimmed_A_${file} \
 	ref=/share/apps/bbmap/resources/adapters.fa \
 	#literal=ATCACG,CGATGT \
 	ktrim=r \
@@ -46,14 +46,14 @@ bbduk.sh \
 #
 bbduk.sh \
 	-Xmx1g \
-	in=./../trimmed_reads/trimmed_A_${file} \
-	out=./../trimmed_reads/trimmed_AQ_${file} \
+	in=./../trimmed_reads/ophio/trimmed_A_${file} \
+	out=./../trimmed_reads/ophio/trimmed_AQ_${file} \
 	qtrim=rl \
 	trimq=10
 done
 #
 # remove all the trimmed_A_* files
-rm ./../trimmed_reads/trimmed_A_*
+rm ./../trimmed_reads/ophio/trimmed_A_*
 #
 ### chunk ends
 
