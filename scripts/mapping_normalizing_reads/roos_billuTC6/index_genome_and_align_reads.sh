@@ -64,6 +64,7 @@ path=/home/billu/TC6/data/
 # echo "BUILDING THE OPHIO INDEX WITH SPLICE AND EXONS SITE"
 # index the exon site version of the ophcf2 genome
 #hisat2-build -f --ss ophcf2_splicesites.txt --exon ophcf2_exons.txt ophcf2_genome.fna ophcf2_exons_index
+# "-ss" is for splice sites, followed by "--exon" exon sites
 #
 # map (trimmed) rnaseq sample to (indexed) genome
 #

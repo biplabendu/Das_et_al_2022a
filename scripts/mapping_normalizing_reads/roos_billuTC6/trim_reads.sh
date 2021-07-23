@@ -6,8 +6,8 @@
 module load bbmap # for bbduk.sh
 
 #set directory (raw seq reads)
-cd /home/billu/TC6/data/raw_seq_reads/
-
+# cd /home/billu/TC6/data/raw_seq_reads/
+cd /Users/roos_brouns/Dropbox/Ant-fungus/01_data/demultiplexed_reads/
 
 ### STEP: Trimming 
 #
@@ -61,9 +61,9 @@ rm ./../trimmed_reads/ophio/trimmed_A_*
 ### STEP: Run FASTQC on the trimmed reads
 #
 # specify directory of the *fastq.gz files
-cd /home/billu/TC6/data/trimmed_reads/
+#cd /home/billu/TC6/data/trimmed_reads/
 #
 # run fastQC on all files and save output in the "output_fastqc" folder
-fastqc -o ./output_fastqc *fastq.gz
+#fastqc -o ./output_fastqc *fastq.gz
 #
 ### chunk ends
