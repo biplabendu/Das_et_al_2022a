@@ -74,7 +74,7 @@ cd $path/trimmed_reads/ophio/
 for file in *fastq.gz
 do
 hisat2 \
-	-p 8 \
+	-p 8 
 	--new-summary \
 	-q \
 	--dta-cufflinks \

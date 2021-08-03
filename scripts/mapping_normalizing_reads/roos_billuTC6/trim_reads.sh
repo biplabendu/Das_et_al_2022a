@@ -7,7 +7,7 @@ module load bbmap # for bbduk.sh
 
 #set directory (raw seq reads)
 # cd /home/billu/TC6/data/raw_seq_reads/
-cd /Users/roos_brouns/Dropbox/Ant-fungus/01_data/demultiplexed_reads/
+cd /home/uu_bio_fg/rbrouns/data/ant_fungus/TC6/data/demultiplexed_reads/
 
 ### STEP: Trimming 
 #
