@@ -1,13 +1,6 @@
 #!/bin/bash
 #SBATCH --cpus-per-task=8
 
-
-#load modules (packages)
-module load hisat2
-module load cufflinks
-module load samtools
-module load bbmap
-
 ## set directory
 # for Roos
 #cd /home/fg/r_brouns/ant_fungus/TC6/data/raw_seq_reads/
