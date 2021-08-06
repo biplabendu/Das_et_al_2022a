@@ -18,7 +18,9 @@ path=/home/uu_bio_fg/rbrouns/data/ant_fungus/TC6/data/mapped_reads/ophio
 # sort and convert Hisat2 sams to sorted bams
 for file in $path/*.sam
 do
-samtools sort -o ${file%%.*}.bam ${file}
+samtools sort \
+    -o ${file%%.*}.bam \
+    ${file}
 done
 
 #
