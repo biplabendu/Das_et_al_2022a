@@ -1,0 +1,90 @@
+---
+title: "compile_gene_names_from_gff_files"
+author: "Biplabendu Das"
+date: "8/17/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Read the two gff files - one from Robin and the other from NCBI
+
+```{r}
+ophio_kim_gff_robin <- read.csv("/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a/scripts/mapping_normalizing_reads/roos_billuTC6/ophio_kim_deBekker2017/getting_ophio_kim_data/files_from_Robin/Ophio5.gene_features.gff3.csv",
+                                header = T, stringsAsFactors = F)
+
+ophio_kim_gff_ncbi <- read.csv("/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a/scripts/mapping_normalizing_reads/roos_billuTC6/ophio_kim_deBekker2017/getting_ophio_kim_data/files_from_NCBI/GCA_001272575.2_ASM127257v2_genomic.gff.csv",
+                               header = T, stringsAsFactors = F)
+
+```
+
+Step one: 
+- Filter and keep only the rows with feature=="gene"
+- Select only the "start", "end", and "attributes" column
+
+```{r}
+
+# load libraries
+library(tidyverse)
+
+ophio_kim_gff_robin <- ophio_kim_gff_robin %>% 
+  filter(feature == "gene") %>% 
+  select(start, end, attributes_robin = attributes)
+
+ophio_kim_gff_ncbi <- ophio_kim_gff_ncbi %>% 
+  filter(feature == "gene") %>% 
+  select(start, end, attributes_ncbi = attributes)
+
+```
+
+Check to see if your code worked!
+
+```{r}
+
+head(ophio_kim_gff_robin)
+head(ophio_kim_gff_ncbi)
+
+```
+
+Step two:
+- Clean the attributes column to retain only the gene names
+
+```{r}
+
+## Robin's annotation
+
+  # initial split
+  foo <- ophio_kim_gff_robin %>% 
+    separate(attributes_robin, c("a","b"), "=", extra = "merge")
+  
+  # final split to obtain only the gene names
+  ophio_kim_gff_robin$attributes_robin <- unlist(strsplit(foo$b,"|gene",4))
+  
+## NCBI's annotation
+  
+  # all-in-one
+  ophio_kim_gff_ncbi <- 
+    ophio_kim_gff_ncbi %>% 
+      separate(attributes_ncbi, c("a","b","c"), ";", extra = "merge") %>% 
+      select(-c(a,c)) %>% 
+      separate(b, c("b","c"), "=", extra = "merge") %>% 
+      select(start, end, attributes_ncbi=c)
+  
+```
+
+Step three:
+- Merge the two files based on the "start" and "end" columns
+
+```{r}
+
+ophio_kim_gff_robin_ncbi <- 
+  ophio_kim_gff_robin %>% 
+    full_join(ophio_kim_gff_ncbi)
+
+# SAVE THE FILE
+write.csv(ophio_kim_gff_robin_ncbi, 
+          file = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a/results/normalized_gene_exp/ophio_kim/ophio_kim_gene_names_robin_ncbi.csv",
+          row.names = F)
+
+```
+
