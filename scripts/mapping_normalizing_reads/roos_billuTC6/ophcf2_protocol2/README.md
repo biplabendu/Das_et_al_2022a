@@ -18,42 +18,43 @@ This analysis requires the following software/modules:
 * FastQC
 * Samtools
 * CuffLinks
+* python 3.7 with modules os and pandas
 
 This analysis requires the following scripts:
-* 00_
-* 01_
+* 00_data_strusture.sh
+* 00_data_download.sh
+* 01_trim_reads.sh
+* 02_mapping.sh
+* 03_counting_and_normalization.sh
+* 04_get_gene_exp_csv.py
 
 
 ## Usage
 
 ### Data structure
-**OPTION_01:** Run the script 00_data_structure.sh. This script creates the directories to organize the data. It is important to for executing the other scripts.
+The 00_data_structure.sh script creates the directories to organize the data. It is important to for executing the other scripts.
 
-```bash 
-00_data_structure.sh \
-    -p <absolute/path/to/store> \ # don’t add a / at the end of the path
-    -n <experiment_name> \
-    -s <species_name>
-```
+Here we defined the absolute path to where the directory needs to be created. 
 
-This script requires as input the absolute path to where the directory needs to be created and the experiment and species name to create a directory for the experiment. 
-The output will be a directory for the experiment, with in this directory a data and results directory, containing a directory for the species to be analyzed.
-
- 
-**OPTION_02:** open the script and fill in the absolute path to where the directory needs to be created and create a directory for the experiment, for example Time-course experiment 6 (TC6). 
 ```bash
-path = /home/set/absolute/path/to/directory #don’t add a / at the end of the path
-experiment_name = TC6
-mkdir $path/TC6/
+path = /home/uu_bio_fg/rbrouns/data/ant_fungus # don’t add a / at the end of the path
+
 ```
 
-In the experiment directory, create a directory for storing the data and the results
+Then create a directory for the experiment,in this case Time-course experiment 6 (TC6)
+```bash
+experiment_name = TC6
+mkdir $path/$experiment_name/
+```
+
+In the experiment directory, create a directory for storing the data, scripts and the results
 ```bash
 mkdir  $path/TC6/data/
+mkdir  $path/TC6/scripts/ # optional you can store the Ophio scripts in here
 mkdir  $path/TC6/results/
 ```
 
-In both the data and result directory, make a directory for the species we are analyzing, for example O. camp-florani.
+In both the data and result directory, make a directory for the species we are analyzing, in this case O. camp-florani.
 ```bash
 species_name = ophio
 mkdir  $path/TC6/data/$species_name/
@@ -61,17 +62,6 @@ mkdir  $path/TC6/results/$species_name/
 ```
 
 ### Download data
-
-**OPTION 1:** Run the 00_download_data.sh script to download the RNA-seq data and genome files. The data will be stored in the folder of the experiment under /path/data/raw_read/ for the reads and /path/data/genome/ for the genome and annotation file. The genome and the annotation file will be necessary for the mapping step.
-
-```bash
-00_download_data.sh \
-    -p <absolute/path/to/store> \ # don’t add a / at the end of the path
-    -n <experiment_name> 
-```
-The output are the raw reads in .fastq.gz format, genome file in .fna format and the annotation file .gff format.
-
-**OPTION 2:** The downloading can also be done manually. However, the scripts need a specific directory structure. If manually downloads are preferred, please make a directory in /path/experiment_name/data/species_name/ named raw_reads. Then save the raw reads in this directory.
 
 ```bash
 mkdir /path/experiment_name/data/species_name/raw_reads
@@ -87,10 +77,6 @@ mkdir /path/experiment_name/data/genome
 This scripts excutes a adapter and quality trim of the raw reads with bbduk. The trimmed reads are stored in a trimmed_reads output directory. 
 After the reads are trimmed, it will run fastqc, to check the quality of the reads. This output is stored in a fastqc_output directory.
 *This scripts needs the software of bbduk and fastqc*
-
-```bash
-'TO DO: make command line script of trim_reads.sh'
-```
 
 The used parameters are:
 * "gtrim=10" will quality trim at Q10 using Phred algorithm, "qtrim=rl" will trim right and left sides

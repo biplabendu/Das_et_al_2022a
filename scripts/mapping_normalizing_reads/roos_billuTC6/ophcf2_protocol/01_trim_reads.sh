@@ -16,16 +16,7 @@ path = # do not end with /
 experiment_name =
 cd /$path/$experiment_name/data/raw_seq_reads/
 
-### STEP: Trimming 
-#
-# TO DO: ADD FOR-LOOP TO INCLUDE ALL SAMPLES?
-#
-## Adapter trim and quality trim in one run
-#bbduk.sh -Xmx1g in1=TC6-02A_ATCACG.fastq.gz out1=./trimmed_reads/trimmed_TC6-02A_ATCACG.fastq.gz minlen=25 qtrim=rl trimq=10 ktrim=r k=25 mink=11 literal=ATCACG,CGATGT hdist=1 tpe tbo
-#
-
-#
-#
+### Trimming 
 ## First adapter trimming of all reads
 #
 for file in *fastq.gz

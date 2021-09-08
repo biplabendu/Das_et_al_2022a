@@ -20,8 +20,12 @@ This analysis requires the following software/modules:
 * CuffLinks
 
 This analysis requires the following scripts:
-* 00_
-* 01_
+* 00_data_structure.sh
+* 00_data_download.sh
+* 01_trim_reads.sh
+* 02_mapping.sh
+* 03_counting_and_normalization.sh
+* 04_get_gene_exp_csv.py
 
 
 ## Usage
@@ -99,3 +103,5 @@ The used parameters are:
 * default looks at reverse-complement and forward seuence of refseq otherwise "rcomp=<t/r>"
 * "-Xmx1g" flag tells BBDuk to use 1GB of RAM
 * tbo" (trim adapters based on pair overlap detection) and "tpe" (both reads to the same length) flags for normal paired-end fragment libraries
+
+### Index genome and align reads
