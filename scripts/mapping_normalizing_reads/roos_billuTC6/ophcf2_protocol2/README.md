@@ -113,12 +113,14 @@ mkdir $path/$experiment_name/data/ophio/trimmed_reads
 cd /$path/$experiment_name/data/ophio/demultiplexed_reads/
 ```
 
-Then do the adapter trimming of all reads.
+Then do the trimming of all reads in one go.
 For this bit of code the file with the used adapeters is needed at the parameter ref=<file.fa>. This fasta file contains the sequences of the used adapters during sequencing. (The path used in this script is al follows, /home/uu_bio_fg/rbrouns/data/ant_fungus/TC6/data/bbmap_adapters/adapters.fa)
+
+First we do the adapter trimming, then the quality trimming
 ```bash
 for file in *fastq.gz
 do
-#
+# adapter trimming
 bbduk.sh \
 	-Xmx1g \
 	in1=${file} \
@@ -130,6 +132,14 @@ bbduk.sh \
 	hdist=1 \
 	tpe \
 	tbo	
+# quality trimming
+bbduk.sh \
+	-Xmx1g \
+	in=./../ophio/trimmed_reads/trimmed_A_${file} \
+	out=./../ophio/trimmed_reads/trimmed_AQ_${file} \
+	qtrim=rl \
+	trimq=10
+done
 ```
 The used parameters are:
 * "gtrim=10" will quality trim at Q10 using Phred algorithm, "qtrim=rl" will trim right and left sides
@@ -139,18 +149,7 @@ The used parameters are:
 * "-Xmx1g" flag tells BBDuk to use 1GB of RAM
 * tbo" (trim adapters based on pair overlap detection) and "tpe" (both reads to the same length) flags for normal paired-end fragment libraries
 
-Next step is the quality trimming of all reads that already have been trimmed for adapaters
-```bash
-bbduk.sh \
-	-Xmx1g \
-	in=./../ophio/trimmed_reads/trimmed_A_${file} \
-	out=./../ophio/trimmed_reads/trimmed_AQ_${file} \
-	qtrim=rl \
-	trimq=10
-done
-```
-
-Then remove all the trimmed_A_* files, which are the files that are only trimmed on adapters. What remains are the adapter and quality trimmed reads.
+Next remove all the trimmed_A_* files, which are the files that are only trimmed on adapters. What remains are the adapter and quality trimmed reads.
 ```bash
 rm ./../trimmed_reads/ophio/trimmed_A_*
 ```
