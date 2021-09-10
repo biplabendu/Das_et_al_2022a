@@ -3,7 +3,7 @@ Obtaining normalized gene expression values from short-read RNA-seq data
 Used for time-course RNA-seq data of Ophiocordyceps camp-florani during manipulation
 
 ## Introduction
-This documentation provides a protocol for obtaining the normalized gene expression values of time-course RNA-seq data of O. camp-florani. This involves trimming, mapping, counting, and normalization of the reads. The reads will be trimmed with BBDuk  (Bushnell B.) and mapped to the reference genome with HISAT2 (Kim et al. 2019). To obtain normalized gene expression values, we use CuffDiff (FPKM) (Trapnell et al. 2013). Each step will be carried out by a separate script. This documentation can be used to correctly run the script. However, it is recommended to read to scripts for a better understanding of the code and the analysis. The RNA-seq data is available on <insert> and a description about the RNA-seq experiment and research objectives can be found on <insert>. The genome of O. camp-florani is publicly available on <insert>. The scripts can be found on <github>.
+This documentation provides a protocol for obtaining the normalized gene expression values of time-course RNA-seq data of O. camp-florani. This involves trimming, mapping, counting, and normalization of the reads. The reads will be trimmed with BBDuk  (Bushnell B.) and mapped to the reference genome with HISAT2 (Kim et al. 2019). To obtain normalized gene expression values, we use CuffDiff (FPKM) (Trapnell et al. 2013). This documentation provides a step by step explanation of all the code and can used to run the analysis. Each step can also be carried out by separate scripts, which are available on the git. The RNA-seq data is available on <insert> and a description about the RNA-seq experiment and research objectives can be found on <insert>. The genome of O. camp-florani is publicly available on <insert>. The scripts can be found on <github>.
 
 *References:*
 *BBMap – Bushnell B. – sourceforge.net/projects/bbmap/*
@@ -155,12 +155,12 @@ Then remove all the trimmed_A_* files, which are the files that are only trimmed
 rm ./../trimmed_reads/ophio/trimmed_A_*
 ```
 ### Mapping 
-This script maps the reads to the reference genome, with HISAT2. 
-For this script the software of HISAT2 and gffread is needed.
+After the reads are trimmed, the next step is mapping the reads to the refenrence genome. This script maps the reads to the reference genome, with HISAT2 (ref). The refence genomes are publicity available on ...
+*For this script the software of HISAT2 and gffread is needed.*
 
 We will first start with indexing the O. camp-florani genome, with exon and and splice sites. 
 
-So first, set genome folder as working directory to store the index files we're creating
+First, set genome folder as working directory to store the index files we're creating
 ```bash
 cd $path/$experiment_name/data/$species_name/genome
 ```
@@ -202,38 +202,33 @@ hisat2 \
 done
 ```
 ### Counting and Normalization
-# This script count the mapped reads and normimlizes them to get the gene expression values in FRKPM
-# This script requires Samtools and cuffdiff (from CuffLinks)
+The next step is counting the read that are mapped to the genes and normalize them. This will result in the final gene expression values. This script counts the mapped reads and normalizes them to get the gene expression values in FRKPM with CuffDiff (ref).
+*This script requires Samtools and cuffdiff (from CuffLinks)*
 
-# 00: define path to directory
-experiment_name = TC6
-path = /home/uu_bio_fg/rbrouns/data/ant_fungus/$experiment_name
-
-## 01: Sort and convert all Hisat2 sams files to sorted bams with samtools sort
-# 
+First, sort and convert all Hisat2 sams files to sorted bams with samtools sort
+```bash
+# move into folder where the mapped reads are
 cd $path/data/ophio/mapped_reads/
-#
+
+# convert sam files to bam files
 for file in *.sam
 do
 samtools sort \
     -o ${file%%.*}.bam \ # Output same basename with .bam extension
     ${file} # Input .sam files
 done
-
-## 02: Cuffdiff normalization
-# Cuffdiff compare one sample to another to obtain normalized gene expression values. Therefore we define our first sample and compare all the other samples to this sample. 
-# Per sample vs sample analysis we create a output file with the gene expressoin values.
-#
+```
+Next step is the Cuffdiff normalization. Cuffdiff compares one sample to another to obtain normalized gene expression values. Therefore we define our first sample and compare all the other samples to this sample. Per sample vs sample analysis cuffdiff outputs a file with the gene expressoin values. The orinalal file name of this file is gene_exp.diff, but we will rename this accoringly to which samples are compared.
+```bash
 # Create output folder
 mkdir $path/data/ophio/cuffdiff_out
-#
+
 # Set working directory to mapped reads
 cd ${path}/data/ophio/mapped_reads/
-#
-# 
+
 # Name the first sample (which has 2 in the file name because first sample is timepoint 2)
 sample1=mapped_trimmed_AQ_*02*.bam
-#
+
 # Run cuffdiff for sample1 vs all samples
 for sample2 in *.bam
 do
@@ -252,9 +247,67 @@ do
         # rename file to excuted analysis
         mv ${path}/data/ophio/cuffdiff_out/gene_exp.diff ${path}/data/ophio/cuffdiff_out/gene_exp_${pw_name1}vs${pw_name2}.csv
 done
-
+```
+Then we will remove all the other outputs files cuffdiff creates, since were only interested in the gene expression values
+```bash
 # remove all the other files 
 cd ${path}/data/ophio/cuffdiff_out/
 rm !(*.csv) 
-#
-### END  
+```
+
+Now all the gene eprression value files will be in the cuffdiff_out folder.
+
+### Get one csv with the normalized expression data
+The next script is in Python 3.7, and needs to be ran seprately from the rest. This script makes one csv file out of all the output data from cuffdiff. It extracts the gene_id and expression values for each sample vs sample analysis. The resulting data file can be easily used for different anaysis in python or R.
+*This scripts run in Python 3.7 and need the os.system and pandas modules*
+
+00: Import system commands and pandas (for DataFrame management). The os.system modules allows us to use bash command in python. The dataframes are a part of the pandas modules, which makes data easy to handle.
+```python
+import os
+import pandas as pd
+```
+Then we need to specify the path were data is (the cuddfiff_out folder)
+```python
+path = '/home/uu_bio_fg/rbrouns/data/ant_fungus/TC6/data/ophio/cuffdiff_out/'
+```
+
+01: Create a list with all the files in the directory where the gene_ex data is, so that we can retreive the data
+```python
+# create the list
+ls_gene_ex_files = (os.listdir(path))
+# sort the list
+ls_gene_ex_files.sort()
+# some how the sample for file 20 does not contain data so that one is removed from te list
+ls_gene_ex_files.remove('gene_exp_02Avs20A.csv')
+```
+02: Create a empty  DataFrame (meaning no expression value data is added yet) with the rows being diffrent genes and the columns containing the gene_id, gene name and the locus
+```python
+# get first filename of list (thus file of sample 1)
+sample1 = (ls_gene_ex_files[0])
+# create df with the data from sample 1
+file0 = pd.read_csv(f'{path}{sample1}', sep='\t')
+# extract the columns test_id, gene_id, gene, locus into new DF
+TC6_gene_ex = file0[['gene_id', 'gene', 'locus']]
+```
+03: Add expression values for each sample as new column in the DataFrame
+```python
+for sample in ls_gene_ex_files:
+   # create df with the data from sample
+   file = pd.read_csv(f'{path}{sample}', sep='\t')
+   # extract the column of expression value_2 and 
+   value_2 = file[['gene_id','value_2']]
+   # rename header of expression value to sample name
+   s_header = sample.split('.')[0]
+   ss_header = 'sample_' + s_header.split('vs')[1] 
+   value_2.columns = ['gene_id',ss_header]
+   # append TC6 DF with expression values DF
+   TC6_gene_ex = pd.concat([TC6_gene_ex, value_2.iloc[:,1]], axis=1)
+```
+04: Then write teh DataFrame to a csv file
+```python
+TC6_gene_ex.to_csv(f'{path}TC6_gene_exp.csv')
+```
+
+### End
+Now you will have a csv file containing al the expression values of the Ophio camp-f RNA seq experiment. Each row is a different gene and each colums is a different sample, thus a different time point. This data is used to find rhytmicity in genes and diffrentially expressed genes.
+
