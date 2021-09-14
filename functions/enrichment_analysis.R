@@ -2,7 +2,7 @@
 
 
 # 1. GO enrichment - Function --------------------------------------------------
-go_enrichment <- function(geneset="test", 
+go_enrichment <- function(geneset, 
                                org = "cflo", 
                                bg = "all", 
                                atleast = 5, 
@@ -75,6 +75,18 @@ go_enrichment <- function(geneset="test",
     } else if (bg == "expressed") {
       
       ## If-else statement to load the expressed geneset for the organism
+      
+      if (org=="ophio_cflo"){
+        
+        foo <- tbl(dbConnect(RSQLite::SQLite(),"./data/databases/TC6_fungal_data.db"), 
+                   "ophio_cflo_expressed_genes") %>% 
+                      filter(expressed=="yes") %>% 
+                      collect() %>% pull(gene_name) %>% as.character()
+        background <- all_genes_gos %>%
+          # filter and keep user specified background geneset 
+          filter(gene_name %in% foo) %>%
+          arrange(gene_name)
+      }
       
     } else (
       background <- all_genes_gos %>%
