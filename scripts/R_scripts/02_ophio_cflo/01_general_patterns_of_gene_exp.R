@@ -216,3 +216,5 @@ rhy.24.nightpeaking.cluster1 <-
   go_enrichment(., 
                 org = "ophio_cflo", 
                 bg = "expressed")
+# view the results
+rhy.24.nightpeaking.cluster1 %>% view()
