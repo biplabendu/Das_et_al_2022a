@@ -36,6 +36,9 @@ conflict_prefer("layout", "plotly")
 # j. ophio_kim_fpkm
 # k. ophio_kim_log2fpkm
 # l. ophio_kim_zscores
+# m. beau_expressed_genes
+# n. beau_fpkm
+# o. beau_log2fpkm
 #
 # Load the data
 my.db <- dbConnect(RSQLite::SQLite(),
