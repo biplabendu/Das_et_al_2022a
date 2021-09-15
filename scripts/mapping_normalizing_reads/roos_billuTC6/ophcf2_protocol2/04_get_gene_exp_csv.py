@@ -27,8 +27,8 @@ ls_gene_ex_files.remove('gene_exp_02Avs20A.csv')
 sample1 = (ls_gene_ex_files[0])
 # create df with the data from sample 1
 file0 = pd.read_csv(f'{path}{sample1}', sep='\t')
-# extract the columns test_id, gene_id, gene, locus into new DF
-TC6_gene_ex = file0[['gene_id', 'gene', 'locus']]
+# extract the columns gene_id, gene, locus into new DF
+TC6_gene_ex = file0[['gene_id', 'gene', 'locus']] 
 
 ### 03: Append expression values as new column matchin to rownames
 #
