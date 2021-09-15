@@ -252,3 +252,99 @@ src_dbi(my.db)
 #             file = "./results/normalized_gene_exp/zscore/ophio_kim/ophio_kim_DD_zscores_noNAs.csv",
 #             row.names = F)
 # 
+# # 04. Beau ----------------------------------------------------------
+
+beau <- read.csv("./results/normalized_gene_exp/raw_fpkm/beau/TC6_gene_exp.csv",
+                   header = T, stringsAsFactors = F, na.strings = c(NA, "", " "))
+# Save file to database
+dbWriteTable(my.db, "beau_fpkm", beau)
+
+# check if table is added in the database (by checking all tables)
+# src_dbi(my.db)
+
+### CVS made with pyhton is diffrent than the one made with R, so we going to transform the python csv to the same format as the R csv
+# load tho look at how the file should be structured
+o.cflo <- read.csv("./results/normalized_gene_exp/raw_fpkm/ophio_cflo/normalized_gene_exp_ophio_cflo_all_samples.csv")
+                   #                    header = T, stringsAsFactors = F, na.strings = c(NA, "", " "))
+# python csv has addiotional cols (index, gene_id, and locus)
+# so we romove those cols first
+beau$gene_id <- NULL
+beau$X <- NULL
+beau$locus <- NULL
+
+# The python csv also has other colnames for the samples (nl sample_* vs ZT*)
+# First extract right colnames from ocflo DF
+new.col.names <- colnames(o.cflo)
+# change the colnames of beau DF
+colnames(beau) <- new.col.names
+
+### Now the beau DF is the same format as the others 
+
+# A. Expressed genes ---------------------------------------------------------
+
+# list of all beau "Expressed" genes (>1 FPKM during the 24h period)
+expressed <-
+  beau %>%
+  na.omit() %>% # Remove NA's
+  filter_at(vars(starts_with("Z")), any_vars(. > 1)) %>% # expression > 1 FPKM 
+  pull(gene_name) %>% # get the gene names of the expressed genes
+  unique() # check wheter there are duplicates
+
+# append this information to the beau data
+expressed.beau <-
+  beau %>%
+  select(gene_name) %>%
+  mutate(expressed = ifelse(gene_name %in% expressed,"yes","no"))
+
+# Save file to databse
+dbWriteTable(my.db, "beau_expressed_genes", expressed.beau)
+
+# show tables in DB
+# src_dbi(my.db)
+
+# B. log2-expression --------------------------------------------------------
+# log2-transform the data
+gene.names <- beau %>% pull(gene_name)
+log2.beau <- log2(beau[-1] + 1)
+log2.beau$gene_name <- gene.names
+log2.beau <- log2.beau %>% select(gene_name, everything())
+# check the log2-transformed data
+log2.beau %>% str()
+# # Save file to database
+dbWriteTable(my.db, "beau_log2fpkm", log2.beau)
+
+# C. score-log2-expression --------------------------------------------------
+# z-score the data
+gene.names <- log2.beau %>% pull(gene_name)
+sample.names <- names(log2.beau[-1])
+zscores.beau <- log2.beau %>%
+  # create a gene x exp matrix
+  select(-1) %>%
+  as.matrix() %>%
+  # use the scale function for each row to calculate z-scores
+    # scale calculates (x-mean(X))/sd(X)
+    # 1 indicates row-wise
+  apply(., 1, scale) %>%
+  # the output needs to be transposed
+  t() %>%
+  # make it a dataframe
+  as.data.frame()
+# add the column names
+names(zscores.beau) <- sample.names
+zscores.beau$gene_name <- gene.names
+zscores.beau <- zscores.beau %>% select(gene_name, everything())
+# check the z-score transformed dataset
+zscores.beau %>% str()
+# Save file to database
+dbWriteTable(my.db, "beau_zscores", zscores.beau)
+
+# Save a csv with the zscores
+beau.zscore <- tbl(my.db, "beau_zscores") %>% collect()
+
+beau.zscore.noNAs <-
+  beau.zscore %>%
+  na.omit()
+
+write.csv(beau.zscore.noNAs,
+          file = "./results/normalized_gene_exp/zscore/beau/beau_zscores_noNas.csv",
+          row.names = F)
