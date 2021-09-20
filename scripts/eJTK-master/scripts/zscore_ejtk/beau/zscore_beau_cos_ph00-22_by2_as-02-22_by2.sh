@@ -21,7 +21,7 @@
 ## 01. HOUSEKEEPING
 ##
 # path to the directory with normalized gene expression
-species=beau
+species=ophio_cflo
 billu_path=Documents/GitHub
 roos_path=Dropbox/Ant-fungus/02_git/Git_Das_folder2
 data_path=~/${roos_path}/Das_et_al_2022a/results/normalized_gene_exp/zscore/${species}/
@@ -32,7 +32,7 @@ data_path=~/${roos_path}/Das_et_al_2022a/results/normalized_gene_exp/zscore/${sp
 data=${species}_zscores_noNAs.txt
 #################################################
 # Define the period you want to analyse
-period_number=8
+period_number=24
 # specify the identifier for the output files 
 ##			 # (Billu's file naming system for period of 8h is cos08. However, the ref_file for this period is named period8. So the if statement is build to get the exact same naming system Billu has for the files)
 if [[ ${period_number} = 8 ]]; then
