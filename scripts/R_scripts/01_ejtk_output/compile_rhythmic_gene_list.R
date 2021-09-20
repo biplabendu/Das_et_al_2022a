@@ -42,6 +42,11 @@ my.db <- dbConnect(RSQLite::SQLite(),
 # which tables are in the database
 src_dbi(my.db)
 #
+# Load library glue for naming purposes
+library(glue)
+#
+# Choose species
+species <- 'ophio_cflo'
 ## End.
 
 # 02. Ophiocordyceps camponoti-floridani --------------------------------------
@@ -85,21 +90,28 @@ src_dbi(my.db)
 # #
 # #
 ## z-score >> eJTK ------------------------
+# 
+# EDITED FOR MORE FUNCTIONALLY Give the period and name the file
+period <- '24'
+name <- glue('{species}_zscore_{period}h')
+
+# CSV name
+csv.name <- glue("./results/ejtk_output/{species}/zscore/{species}_zscores_noNAs_cos{period}_ph0022by2_as0222by2_zscore_jtkout_GammaP.txt")
 #
 # Note: ophio.cflo.24.zscore is exactly the same as ophio.cflo.24 meaning that using
 #       FPKM values or z-scores to run eJTK does not change the result
 #
 ## Period = 24h
-ophio.cflo.24.zscore <- read.csv("./results/ejtk_output/ophio_cflo/from_zscore/ophio_cflo_zscores_noNAs_cos24_ph0020by4_as0420by4_zscore_jtkout_GammaP.txt",
+zscore <- read.csv(csv.name,
                           sep = "\t", header = T, stringsAsFactors = F)
-ophio.cflo.24.zscore %>% 
+zscore %>% 
   head()
 # Save file to database
-dbWriteTable(my.db, "ophio_cflo_zscores_24h", ophio.cflo.24.zscore)
+dbWriteTable(my.db, name, zscore)
 #
 #
 ## Period = 12h
-ophio.cflo.12.zscore <- read.csv("./results/ejtk_output/ophio_cflo/from_zscore/ophio_cflo_zscores_noNAs_cos12_ph0020by4_as0420by4_zscore_jtkout_GammaP.txt",
+zscore.12h <- read.csv("./results/ejtk_output/ophio_cflo/zscore/ophio_cflo_zscores_noNAs_cos12_ph0022by2_as0222by2_zscore_jtkout_GammaP.txt",
                           sep = "\t", header = T, stringsAsFactors = F)
 ophio.cflo.12.zscore %>% 
   head()
@@ -108,7 +120,7 @@ dbWriteTable(my.db, "ophio_cflo_zscores_12h", ophio.cflo.12.zscore)
 #
 #
 ## Period = 8h
-ophio.cflo.08.zscore <- read.csv("./results/ejtk_output/ophio_cflo/from_zscore/ophio_cflo_zscores_noNAs_cos08_ph0020by4_as0420by4_zscore_jtkout_GammaP.txt",
+ophio.cflo.08.zscore <- read.csv("./results/ejtk_output/ophio_cflo/from_zscore/ophio_cflo_zscores_noNAs_cos08_ph0022by2_as0222by2_zscore_jtkout_GammaP.txt",
                           sep = "\t", header = T, stringsAsFactors = F)
 ophio.cflo.08.zscore %>% 
   head()

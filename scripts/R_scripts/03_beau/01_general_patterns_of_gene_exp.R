@@ -29,13 +29,13 @@ gamma.pval = 0.05
 # 1. TC7_ejtk.db
 # Desc: This database contains all ejtk-output for TC7
 ejtk.db <- dbConnect(RSQLite::SQLite(),
-                   "./data/databases/TC7_ejtk.db")
+                   "./data/databases/TC6_fungal_ejtk.db")
 # which tables are in the database
 src_dbi(ejtk.db)
 #
 # 2. TC7_data.db
 data.db <- dbConnect(RSQLite::SQLite(),
-                     "./data/databases/TC7_data.db")
+                     "./data/databases/TC6_fungal_data.db")
 src_dbi(data.db)
 #
 ##
