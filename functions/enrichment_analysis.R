@@ -2,11 +2,13 @@
 
 
 # 1. GO enrichment - Function --------------------------------------------------
-go_enrichment <- function(geneset, 
-                               org = "cflo", 
-                               bg = "all", 
-                               atleast = 5, 
-                               enriched.terms="over") {
+go_enrichment <- function(geneset,
+                          function.dir = ".",
+                          data.dir = ".",
+                          org = "cflo", 
+                          bg = "all", 
+                          atleast = 5, 
+                          enriched.terms="over") {
 
   # save the input list of genes for enrichment test
   genes <- geneset
@@ -18,7 +20,7 @@ go_enrichment <- function(geneset,
     if (org=="ophio_cflo"){
       
       print("Loading annotation file for Ophiocordyceps camponoti-floridani")
-      all_genes <- read.csv("./functions/func_data/ophio_cflo_annots_robin_ncbi.csv", 
+      all_genes <- read.csv(paste0(function.dir,"/functions/func_data/ophio_cflo_annots_robin_ncbi.csv"), 
                             header=T, stringsAsFactors = F, na.strings = c(NA,""," "))
       # define the separator
       separator = "; "
@@ -28,7 +30,7 @@ go_enrichment <- function(geneset,
     } else if (org=="ophio_kim"){
       
       print("Loading annotation file for Ophiocordyceps kimflemingae")
-      all_genes <- read.csv("./functions/func_data/ophio_kim_annots_robin_ncbi.csv", 
+      all_genes <- read.csv(paste0(function.dir,"/functions/func_data/ophio_kim_annots_robin_ncbi.csv"), 
                             header=T, stringsAsFactors = F, na.strings = c(NA,""," "))
       # define the separator
       separator = ";"
@@ -38,7 +40,7 @@ go_enrichment <- function(geneset,
     } else if (org=="cflo"){
       
       print("Loading annotation file for Camponotus floridanus")
-      all_genes <- read.csv("./functions/func_data/cflo_annots.csv", 
+      all_genes <- read.csv(paste0(function.dir,"/functions/func_data/cflo_annots.csv"), 
                             header=T, stringsAsFactors = F, na.strings = c(NA,""," "))
       # define the separator
       separator = "; "
@@ -78,7 +80,7 @@ go_enrichment <- function(geneset,
       
       if (org=="ophio_cflo"){
         
-        foo <- tbl(dbConnect(RSQLite::SQLite(),"./data/databases/TC6_fungal_data.db"), 
+        foo <- tbl(dbConnect(RSQLite::SQLite(),paste0(data.dir,"/data/databases/TC6_fungal_data.db")), 
                    "ophio_cflo_expressed_genes") %>% 
                       filter(expressed=="yes") %>% 
                       collect() %>% pull(gene_name) %>% as.character()
@@ -224,127 +226,131 @@ go_enrichment <- function(geneset,
 #   filter(adj_pVal < 0.01) %>% 
 #   select(1:6)
 
-# 
-# # 2. plotting GO enrichments ----------------------------------------------
-# 
-# go_enrichment_plot <- function(data, category, fdr=5, clean="yes") {
-#   
-#   source("./functions/theme_publication.R")
-#   
-#   #Save the data to an object
-#   df <- data
-#   
-#   # Let's read the file with all Cflo GO terms and their categories
-#   cflo_gos <- read.csv("./functions/func_data/Cflo_distinct_gos_namespace.csv", header = T, stringsAsFactors = F)
-#   cflo_gos <- cflo_gos %>% 
-#     dplyr::select(1:3) %>% 
-#     dplyr::select(GO = "GOTerm.identifier", GO_category = "GOTerm.namespace") 
-#   
-#   cflo_gos[cflo_gos$GO_category=="biological_process",]$GO_category <- "BP"
-#   cflo_gos[cflo_gos$GO_category=="cellular_component",]$GO_category <- "CP"
-#   cflo_gos[cflo_gos$GO_category=="molecular_function",]$GO_category <- "MF"
-#   
-#   col.scheme <- c("#143740",
-#                   "#286E80",
-#                   "#3BA4BF",
-#                   "#4FDBFF",
-#                   "#47C5E6")
-#   
-#   
-#   #Format the dataframe
-#   df <- df %>% 
-#     # only keep the over-enriched terms
-#     filter(over_under == "over") %>%
-#     # remove the NA term
-#     filter(GO_desc != "NA") %>% 
-#     # set FDR at 1%
-#     filter(adj_pVal < (fdr/100)) %>%
-#     # add the rhythmicity scores
-#     mutate(score = -log(adj_pVal)) %>% 
-#     # add a column containing the GO categories
-#     left_join(cflo_gos, by="GO") %>% 
-#     # reorder the cols
-#     dplyr::select(GO, GO_category, everything())
-#   
-#   
-#   goplot <- ggplot(df) +
-#     # set overall appearance of the plot
-#     theme_Publication() +
-#     # Define the dependent and independent variables
-#     aes(x = reorder(GO_desc, score), y = score, fill=GO_category) +
-#     # Add a line showing the alpha = 0.01 level
-#     geom_hline(yintercept = -log(0.01), size = 1.2, color = "#C7D7D9", alpha=0.8) +
-#     # From the defined variables, create a vertical bar chart
-#     geom_col(position = "dodge", alpha=0.9, size = 1) +
-#     # Set main and axis titles
-#     # ggtitle(paste0("GO enrichment | FDR = ",fdr,"%")) +
-#     xlab("GOs") +
-#     # add caption
-#     labs(
-#       # title = paste0("GO enrichment | FDR = ",fdr,"%"),
-#       # subtitle = sub,
-#       caption = "*vertical line denotes FDR of 1%") +
-#     ylab(expression(-log[10]*' '*q[enriched])) +
-#     # # add annotations
-#     # ggrepel::geom_label_repel(aes(label = paste(round((n_GO_DEG/n_GO*100),2), "%", paste(" of ",n_GO,sep=""), sep="")),
-#     #                           fill = "transparent",
-#     #                           color = 'black',
-#     #                           size = 3,
-#     #                           direction = "x",
-#     #                           ylim=c(10,max(df$score)),
-#     #                           point.padding = 0.25,
-#     #                           label.padding = 0.25,
-#     #                           segment.color = 'transparent',
-#     #                           # get rid of the outline for the label
-#   #                           label.size = NA) +
-#   theme(legend.position = "bottom") +
-#     ylim(c(0,max(df$score)+2)) +
-#     # Add facetting for each GO category
-#     facet_grid(GO_category ~ ., scales = "free_y", space = "free_y") +
-#     # Shorten very long labels (GO descriptions)
-#     scale_x_discrete(label = function(x) stringr::str_trunc(x, 35)) +
-#     # Flip the x and y axes
-#     coord_flip() +
-#     scale_fill_manual(values= setNames(col.scheme, levels(df$GO_category))) +
-#     # scale_fill_manual(values = setNames(c("lightblue", "darkgreen"), levels(tstat$Hemisphere)))
-#     theme(strip.background = element_blank(), strip.text = element_blank(), # get rid of facet grid labels
-#           plot.title = element_text(hjust = 0.5),
-#           axis.line.y = element_line(colour = "transparent", 
-#                                      size=1),
-#           legend.title = element_blank(),
-#           # legend.position = "None",
-#           plot.caption = element_text(hjust=1),
-#           axis.title.y = element_blank()) +
-#     guides(
-#       fill = guide_legend(
-#         title = "Legend Title",
-#         override.aes = aes(label = "")))
-#   
-#   if (clean == "yes") {
-#     goplot <- goplot
-#   }
-#   
-#   else(
-#     goplot <- goplot +
-#       # add annotations
-#       ggrepel::geom_label_repel(aes(label = paste(round((n_GO_DEG/n_GO*100),2), "%", paste(" of ",n_GO,sep=""), sep="")),
-#                                 fill = "transparent",
-#                                 color = 'black',
-#                                 size = 3,
-#                                 direction = "x",
-#                                 ylim=c(10,max(df$score)),
-#                                 point.padding = 0.25,
-#                                 label.padding = 0.25,
-#                                 segment.color = 'transparent',
-#                                 # get rid of the outline for the label
-#                                 label.size = NA)
-#   )
-#   
-#   
-#   return(goplot)
-# }
-# 
-# 
+
+# 2. plotting GO enrichments ----------------------------------------------
+
+go_enrichment_plot <- function(data, 
+                               function.dir = ".",
+                               category, 
+                               fdr=5, 
+                               clean="yes") {
+
+  source(paste0(function.dir,"/functions/theme_publication.R"))
+
+  #Save the data to an object
+  df <- data
+
+  # Let's read the file with all Cflo GO terms and their categories
+  cflo_gos <- read.csv(paste0(function.dir,"/functions/func_data/distinct_gos_namespace.csv"), header = T, stringsAsFactors = F)
+  cflo_gos <- cflo_gos %>%
+    dplyr::select(1:3) %>%
+    dplyr::select(GO = "GOTerm.identifier", GO_category = "GOTerm.namespace")
+
+  cflo_gos[cflo_gos$GO_category=="biological_process",]$GO_category <- "BP"
+  cflo_gos[cflo_gos$GO_category=="cellular_component",]$GO_category <- "CP"
+  cflo_gos[cflo_gos$GO_category=="molecular_function",]$GO_category <- "MF"
+
+  col.scheme <- c("#143740",
+                  "#286E80",
+                  "#3BA4BF",
+                  "#4FDBFF",
+                  "#47C5E6")
+
+
+  #Format the dataframe
+  df <- df %>%
+    # only keep the over-enriched terms
+    filter(over_under == "over") %>%
+    # remove the NA term
+    filter(GO_desc != "NA") %>%
+    # set FDR at 1%
+    filter(adj_pVal < (fdr/100)) %>%
+    # add the rhythmicity scores
+    mutate(score = -log(adj_pVal)) %>%
+    # add a column containing the GO categories
+    left_join(cflo_gos, by="GO") %>%
+    # reorder the cols
+    dplyr::select(GO, GO_category, everything())
+
+
+  goplot <- ggplot(df) +
+    # set overall appearance of the plot
+    theme_Publication() +
+    # Define the dependent and independent variables
+    aes(x = reorder(GO_desc, score), y = score, fill=GO_category) +
+    # Add a line showing the alpha = 0.01 level
+    geom_hline(yintercept = -log(0.01), size = 1.2, color = "#C7D7D9", alpha=0.8) +
+    # From the defined variables, create a vertical bar chart
+    geom_col(position = "dodge", alpha=0.9, size = 1) +
+    # Set main and axis titles
+    # ggtitle(paste0("GO enrichment | FDR = ",fdr,"%")) +
+    xlab("GOs") +
+    # add caption
+    labs(
+      # title = paste0("GO enrichment | FDR = ",fdr,"%"),
+      # subtitle = sub,
+      caption = "*vertical line denotes FDR of 1%") +
+    ylab(expression(-log[10]*' '*q[enriched])) +
+    # # add annotations
+    # ggrepel::geom_label_repel(aes(label = paste(round((n_GO_DEG/n_GO*100),2), "%", paste(" of ",n_GO,sep=""), sep="")),
+    #                           fill = "transparent",
+    #                           color = 'black',
+    #                           size = 3,
+    #                           direction = "x",
+    #                           ylim=c(10,max(df$score)),
+    #                           point.padding = 0.25,
+    #                           label.padding = 0.25,
+    #                           segment.color = 'transparent',
+    #                           # get rid of the outline for the label
+  #                           label.size = NA) +
+  theme(legend.position = "bottom") +
+    ylim(c(0,max(df$score)+2)) +
+    # Add facetting for each GO category
+    facet_grid(GO_category ~ ., scales = "free_y", space = "free_y") +
+    # Shorten very long labels (GO descriptions)
+    scale_x_discrete(label = function(x) stringr::str_trunc(x, 35)) +
+    # Flip the x and y axes
+    coord_flip() +
+    scale_fill_manual(values= setNames(col.scheme, levels(df$GO_category))) +
+    # scale_fill_manual(values = setNames(c("lightblue", "darkgreen"), levels(tstat$Hemisphere)))
+    theme(strip.background = element_blank(), strip.text = element_blank(), # get rid of facet grid labels
+          plot.title = element_text(hjust = 0.5),
+          axis.line.y = element_line(colour = "transparent",
+                                     size=1),
+          legend.title = element_blank(),
+          # legend.position = "None",
+          plot.caption = element_text(hjust=1),
+          axis.title.y = element_blank()) +
+    guides(
+      fill = guide_legend(
+        title = "Legend Title",
+        override.aes = aes(label = "")))
+
+  if (clean == "yes") {
+    goplot <- goplot
+  }
+
+  else(
+    goplot <- goplot +
+      # add annotations
+      ggrepel::geom_label_repel(aes(label = paste(round((n_GO_DEG/n_GO*100),2), "%", paste(" of ",n_GO,sep=""), sep="")),
+                                fill = "transparent",
+                                color = 'black',
+                                size = 3,
+                                direction = "x",
+                                ylim=c(10,max(df$score)),
+                                point.padding = 0.25,
+                                label.padding = 0.25,
+                                segment.color = 'transparent',
+                                # get rid of the outline for the label
+                                label.size = NA)
+  )
+
+
+  return(goplot)
+}
+
+
 # # 3. Plotting heat maps ------------------------------------------------------
 # 
 # cflo_heatmap <- function(geneset, 
