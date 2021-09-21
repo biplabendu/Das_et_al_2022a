@@ -54,7 +54,8 @@ go_enrichment <- function(geneset,
       stop()
     }
   
-  ## make the flattened gene x annotation file
+  ## make the flattened gene x annotation file, 
+  # > If a gene_Id has multiple GO_terms, we want them in multiple row, instead of one 
     # Select only the columns that we need
     all_genes <- all_genes[,c("gene_name","GOs")]
     #' Let's replace the NAs in GOs and pfams with "no_annot"
@@ -75,20 +76,20 @@ go_enrichment <- function(geneset,
         arrange(gene_name)
       
     } else if (bg == "expressed") {
-      
+
       ## If-else statement to load the expressed geneset for the organism
       
-      if (org=="ophio_cflo"){
-        
-        foo <- tbl(dbConnect(RSQLite::SQLite(),paste0(data.dir,"/data/databases/TC6_fungal_data.db")), 
-                   "ophio_cflo_expressed_genes") %>% 
-                      filter(expressed=="yes") %>% 
-                      collect() %>% pull(gene_name) %>% as.character()
-        background <- all_genes_gos %>%
-          # filter and keep user specified background geneset 
-          filter(gene_name %in% foo) %>%
-          arrange(gene_name)
-      }
+        if (org=="ophio_cflo"){
+          
+          foo <- tbl(dbConnect(RSQLite::SQLite(),paste0(data.dir,"/data/databases/TC6_fungal_data.db")), 
+                     "ophio_cflo_expressed_genes") %>% 
+                        filter(expressed=="yes") %>% 
+                        collect() %>% pull(gene_name) %>% as.character()
+          background <- all_genes_gos %>%
+            # filter and keep user specified background geneset 
+            filter(gene_name %in% foo) %>%
+            arrange(gene_name)
+        }
       
     } else (
       background <- all_genes_gos %>%

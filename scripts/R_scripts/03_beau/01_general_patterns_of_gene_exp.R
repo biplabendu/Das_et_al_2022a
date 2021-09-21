@@ -4,7 +4,7 @@ set.seed(420)
 rm(list = ls())
 #
 ## Load packages ----------
-pacman::p_load(pheatmap, dendextend, tidyverse, viridis)
+pacman::p_load(pheatmap, dendextend, tidyverse, viridis, ggthemes)
 pacman::p_load(RSQLite, tidyverse, dbplyr, DT, conflicted)
 #
 # set conflict preference (housekeeping to make sure functions work as expected)
@@ -43,7 +43,7 @@ src_dbi(data.db)
 
 # Specify the focal sample for analysis -----------------------------------
 
-sample.name = "cflo_control"
+sample.name = "beau"
 
 # 01. General patterns of gene expression ---------------------------------
 
@@ -53,11 +53,11 @@ not.expressed <-
   collect() %>% 
   filter_at(vars(starts_with("Z")), all_vars(. == 0)) %>%
   pull(gene_name)
-# A2: run enrichment
+# A2: run enrichment (make plot of enrichment found of non-expressed genes)
 not.expressed %>% 
   go_enrichment(., 
-                org = "cflo", 
-                bg = "all") %>%  # enrichment against all ophio_cflo genes in the genome
+                org = "ophio_cflo", 
+                bg = 'all') %>%  # enrichment against all ophio_cflo genes in the genome
   go_enrichment_plot(clean = "no")
   
 # B: genes that are expressed (FPKM > 1 for at least one time point)
@@ -100,29 +100,14 @@ expressed <-
 
 ## Load all the rhythmic genesets 
 ## Note, ordered according to their p-value; highly rhythmic at the top.
-# Circadian genes (period = 24h)
-tbl(ejtk.db, paste0(sample.name,"_zscores_24h"))%>% head()
-## get the gene-names for sig. 24h-rhythmic genes
-rhy.24 <-
-  tbl(ejtk.db, paste0(sample.name,"_zscores_24h")) %>% 
-  filter(GammaP < gamma.pval) %>% 
-  select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
-  select(ID) %>% pull()
+#
+# Choose period
+period = '08'
 
 # Ultradian genes (period = 8h)
-tbl(ejtk.db, paste0(sample.name,"_zscores_08h")) %>% head()
 ## 
-rhy.8 <-
-  tbl(ejtk.db, paste0(sample.name,"_zscores_08h")) %>%
-  filter(GammaP < gamma.pval) %>%
-  select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
-  select(ID) %>% pull()
-
-# Ultradian genes (period = 12h)
-tbl(ejtk.db, paste0(sample.name,"_zscores_12h")) %>% head()
-##
-rhy.12 <-
-  tbl(ejtk.db, paste0(sample.name,"_zscores_12h")) %>%
+rhy <-
+  tbl(ejtk.db, paste0(sample.name,"_zscores_",period,'h')) %>%
   filter(GammaP < gamma.pval) %>%
   select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
   select(ID) %>% pull()
@@ -133,7 +118,7 @@ zscore.dat <- data.db %>% tbl(., paste0(sample.name,"_zscores")) %>% collect()
 # Filter the zscores to keep only rhythmic genes
 zscore.rhy <-
   zscore.dat %>% 
-  filter(gene_name %in% rhy.8) %>% 
+  filter(gene_name %in% rhy) %>% 
   as.data.frame()
 
 
@@ -142,7 +127,7 @@ rownames(zscore.rhy) = zscore.rhy$gene_name
 zscore.rhy <- as.matrix(zscore.rhy[-1])
 
 
-# Hierarchical clustering of the for24 and nur24 genesets
+# Hierarchical clustering of the genesets
 my_hclust_gene <- hclust(dist(zscore.rhy), method = "complete")
 
 
@@ -167,7 +152,7 @@ my.breaks = seq(-3, max(zscore.rhy), by=0.06)
 # my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.06)
 
 # Let's plot!
-# rhy.heat <-
+rhy.heat <-
   pheatmap(zscore.rhy, show_rownames = F, show_colnames = F,
                          annotation_row = my_gene_col, 
                          annotation_col = my_sample_col,
@@ -188,40 +173,50 @@ my.breaks = seq(-3, max(zscore.rhy), by=0.06)
                          ## Color scale
                          legend = T)
 
+# To save the heatmap to a pdf, run this code. For this to work make sure the heatmap is stored in the variable rhy.heat
+save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
+  stopifnot(!missing(x))
+  stopifnot(!missing(filename))
+  pdf(filename, width=width, height=height)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+name.path.file <- paste0('./results/heatmap/rhy_heatmap_',sample.name,'_',period,'h.pdf')
+save_pheatmap_pdf(rhy.heat, name.path.file)
+# run enrichment for day/night-peaking clusters ---------------------------
 
+# Run enrichment for diurnal (24h-rhythmic) genes
+# that peak during the day (day-peaking clusters) and night (night-peaking clusters);
+  # save the results as csvs &
+  # plot the enrichment results.
 
-# # run enrichment for day/night-peaking clusters ---------------------------
-# 
-# # Run enrichment for diurnal (24h-rhythmic) genes
-# # that peak during the day (day-peaking clusters) and night (night-peaking clusters);
-#   # save the results as csvs & 
-#   # plot the enrichment results.
-# 
-# # from eye-balling the heatmap from above
-#   # day-peaking cluster: cluster-3
-#   # night-peaking cluster: cluster-1
-#   
-# ## day-peaking | cluster 3 ##
-# rhy.24.daypeaking.cluster3 <-
-#   my_gene_col %>%
-#   rownames_to_column(var = "gene") %>%
-#   filter(cluster == 3) %>%
-#   pull(gene) %>%
-#   # run enrichment analysis
-#   go_enrichment(., 
-#                 org = "ophio_cflo", 
-#                 bg = expressed) # enrichment against all expressed ophio_cflo genes
-# # view the results
-# rhy.24.daypeaking.cluster3 %>% view()
-# 
-# ## night-peaking | cluster 1 ##
-# rhy.24.nightpeaking.cluster1 <- 
-#   my_gene_col %>%
-#   rownames_to_column(var = "gene") %>%
-#   filter(cluster == 1) %>%
-#   pull(gene) %>%
-#   go_enrichment(., 
-#                 org = "ophio_cflo", 
-#                 bg = "expressed")
-# # view the results
-# rhy.24.nightpeaking.cluster1 %>% view()
+# from eye-balling the heatmap from above
+  # day-peaking cluster: cluster-3
+  # night-peaking cluster: cluster-1
+
+## day-peaking | cluster 3 ##
+rhy.24.daypeaking.cluster3 <-
+  my_gene_col %>%
+  rownames_to_column(var = "gene") %>%
+  filter(cluster == 3) %>%
+  pull(gene) %>%
+  # run enrichment analysis
+  go_enrichment(.,
+                org = "ophio_cflo",
+                bg = expressed) # enrichment against all expressed ophio_cflo genes
+# view the results
+rhy.24.daypeaking.cluster3 %>% view()
+
+## night-peaking | cluster 1 ##
+rhy.24.nightpeaking.cluster1 <-
+  my_gene_col %>%
+  rownames_to_column(var = "gene") %>%
+  filter(cluster == 1) %>%
+  pull(gene) %>%
+  go_enrichment(.,
+                org = "ophio_cflo",
+                bg = "expressed")
+# view the results
+rhy.24.nightpeaking.cluster1 %>% view()
+

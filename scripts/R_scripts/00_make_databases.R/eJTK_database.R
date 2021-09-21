@@ -38,13 +38,14 @@ gamma.pval = 0.05
 my.db <- dbConnect(RSQLite::SQLite(),
                    "./data/databases/TC6_fungal_ejtk.db")
 # which tables are in the database
-src_dbi(my.db)
 #
+src_dbi(my.db)
+
 # Load library glue for naming purposes
 library(glue)
 #
 # Choose species
-species <- 'beau'
+species <- 'ophio_cflo'
 ## End.
 
 ## z-score >> eJTK ------------------------
@@ -55,7 +56,7 @@ periods <- c('08',12,24) %>%
 
 for (i in periods) {
   # name the file with the species and period
-  name <- glue('{species}_zscore_{i}h')
+  name <- glue('{species}_zscores_{i}h')
   
   # CSV name
   csv.name <- glue("./results/ejtk_output/{species}/zscore/{species}_zscores_noNAs_cos{i}_ph0022by2_as0222by2_zscore_jtkout_GammaP.txt")
