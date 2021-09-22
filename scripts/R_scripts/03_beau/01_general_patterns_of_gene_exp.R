@@ -43,7 +43,7 @@ src_dbi(data.db)
 
 # Specify the focal sample for analysis -----------------------------------
 
-sample.name = "beau"
+sample.name = "ophio_cflo"
 
 # 01. General patterns of gene expression ---------------------------------
 
@@ -102,7 +102,7 @@ expressed <-
 ## Note, ordered according to their p-value; highly rhythmic at the top.
 #
 # Choose period
-period = '08'
+period = '24'
 
 # Ultradian genes (period = 8h)
 ## 
@@ -148,7 +148,7 @@ my_colour = list(
   cluster = viridis::cividis(100)[c(10,90,60,30)])
 
 # Color scale
-my.breaks = seq(-3, max(zscore.rhy), by=0.06)
+my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.1)
 # my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.06)
 
 # Let's plot!
@@ -184,6 +184,7 @@ save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
 }
 name.path.file <- paste0('./results/heatmap/rhy_heatmap_',sample.name,'_',period,'h.pdf')
 save_pheatmap_pdf(rhy.heat, name.path.file)
+  
 # run enrichment for day/night-peaking clusters ---------------------------
 
 # Run enrichment for diurnal (24h-rhythmic) genes
