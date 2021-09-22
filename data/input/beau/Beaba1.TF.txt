@@ -1,0 +1,417 @@
+id	proteinId	TF
+1	Beaba1|9086	Fungal Specific TF
+2	Beaba1|9096	Fungal Specific TF
+3	Beaba1|9110	Fungal Specific TF
+4	Beaba1|9125	Fungal Specific TF
+5	Beaba1|5814	Homeodomain
+6	Beaba1|5820	Fungal Specific TF
+7	Beaba1|5846	Fungal Specific TF
+8	Beaba1|5855	Fungal Specific TF
+9	Beaba1|5861	C2H2 zinc finger
+10	Beaba1|5872	bZIP
+11	Beaba1|2634	Fungal Specific TF
+12	Beaba1|2647	Fungal Specific TF
+13	Beaba1|2662	Fungal Specific TF
+14	Beaba1|7284	Fungal Specific TF
+15	Beaba1|7288	Fungal Specific TF
+16	Beaba1|7300	Fungal Specific TF
+17	Beaba1|7334	Fungal Specific TF
+18	Beaba1|7339	Fungal Specific TF
+19	Beaba1|7341	Fungal Specific TF
+20	Beaba1|7342	Fungal Specific TF
+21	Beaba1|7355	Fungal Specific TF
+22	Beaba1|7054	Fungal Specific TF
+23	Beaba1|7066	Fungal Specific TF
+24	Beaba1|7069	Fungal Specific TF
+25	Beaba1|7070	Fungal Specific TF
+26	Beaba1|7071	Fungal Specific TF
+27	Beaba1|1626	Helix-loop-helix
+28	Beaba1|1641	Fungal Specific TF
+29	Beaba1|1667	Forkhead
+30	Beaba1|1669	Fungal Specific TF
+31	Beaba1|5898	Fungal Specific TF
+32	Beaba1|5924	Centromere protein B, DNA-binding region
+33	Beaba1|5939	Fungal Specific TF
+34	Beaba1|5945	Fungal Specific TF
+35	Beaba1|5953	Fungal Specific TF
+36	Beaba1|5962	Fungal Specific TF
+37	Beaba1|1414	Fungal Specific TF
+38	Beaba1|1479	Fungal Specific TF
+39	Beaba1|148	Homeodomain
+40	Beaba1|1486	Fungal Specific TF
+41	Beaba1|1492	Zinc finger, GRF-type
+42	Beaba1|1499	Fungal Specific TF
+43	Beaba1|1502	Fungal Specific TF
+44	Beaba1|6883	Fungal Specific TF
+45	Beaba1|6902	Fungal Specific TF
+46	Beaba1|4393	Fungal Specific TF
+47	Beaba1|4426	HMG
+48	Beaba1|4445	Histone-like TF
+49	Beaba1|4448	Fungal Specific TF
+50	Beaba1|4449	Helix-loop-helix
+51	Beaba1|1333	Bromodomain transcription factor
+52	Beaba1|1403	GATA type zinc finger
+53	Beaba1|1404	Fungal Specific TF
+54	Beaba1|1157	CCAAT-binding TF
+55	Beaba1|1180	Homeodomain
+56	Beaba1|1203	C2H2 zinc finger
+57	Beaba1|1214	HMG
+58	Beaba1|2194	SART1
+59	Beaba1|2200	Fungal Specific TF
+60	Beaba1|2201	Fungal Specific TF
+61	Beaba1|2226	Fungal Specific TF
+62	Beaba1|2557	Fungal Specific TF
+63	Beaba1|2567	Fungal Specific TF
+64	Beaba1|2591	Fungal Specific TF
+65	Beaba1|2599	Fungal Specific TF
+66	Beaba1|300	TEA/ATTS
+67	Beaba1|5136	C2H2 zinc finger
+68	Beaba1|5156	Fungal Specific TF
+69	Beaba1|5163	GATA type zinc finger
+70	Beaba1|517	Fungal Specific TF
+71	Beaba1|5178	Fungal Specific TF
+72	Beaba1|5187	Histone-like TF
+73	Beaba1|5197	Fungal Specific TF
+74	Beaba1|521	HMG
+75	Beaba1|5223	Fungal Specific TF
+76	Beaba1|9641	Fungal Specific TF
+77	Beaba1|971	C2H2 zinc finger
+78	Beaba1|9716	C2H2 zinc finger
+79	Beaba1|9537	Fungal Specific TF
+80	Beaba1|9560	GATA type zinc finger
+81	Beaba1|96	Fungal Specific TF
+82	Beaba1|7864	Transcription factor TFIIS
+83	Beaba1|7891	bZIP
+84	Beaba1|7909	Bromodomain transcription factor
+85	Beaba1|3269	Fungal Specific TF
+86	Beaba1|3279	DDT
+87	Beaba1|3307	Fungal Specific TF
+88	Beaba1|3328	Fungal Specific TF
+89	Beaba1|5334	Fungal Specific TF
+90	Beaba1|5338	MADS-box
+91	Beaba1|5367	Fungal Specific TF
+92	Beaba1|5373	C2H2 zinc finger
+93	Beaba1|5373	Fungal Specific TF
+94	Beaba1|5407	Fungal Specific TF
+95	Beaba1|6544	C2H2 zinc finger
+96	Beaba1|6544	Fungal Specific TF
+97	Beaba1|6549	C2H2 zinc finger
+98	Beaba1|656	bZIP
+99	Beaba1|6572	Fungal Specific TF
+100	Beaba1|6593	Fungal Specific TF
+101	Beaba1|6597	AT-rich interaction region
+102	Beaba1|7945	Fungal Specific TF
+103	Beaba1|7964	Helix-loop-helix
+104	Beaba1|899	bZIP
+105	Beaba1|9004	C2H2 zinc finger
+106	Beaba1|9023	Fungal Specific TF
+107	Beaba1|9057	Fungal Specific TF
+108	Beaba1|7483	bZIP
+109	Beaba1|1787	Histone-like TF
+110	Beaba1|1830	Helix-turn-helix
+111	Beaba1|8070	Fungal Specific TF
+112	Beaba1|8083	Helix-loop-helix
+113	Beaba1|8096	Fungal Specific TF
+114	Beaba1|8340	Forkhead
+115	Beaba1|8353	bZIP
+116	Beaba1|8369	Fungal Specific TF
+117	Beaba1|8378	Fungal Specific TF
+118	Beaba1|8385	Fungal Specific TF
+119	Beaba1|7768	Helix-turn-helix
+120	Beaba1|7768	Centromere protein B, DNA-binding region
+121	Beaba1|7784	Fungal Specific TF
+122	Beaba1|6761	C2H2 zinc finger
+123	Beaba1|6763	MADS-box
+124	Beaba1|677	Fungal Specific TF
+125	Beaba1|6785	Transcription factor TFIIS
+126	Beaba1|6350	Fungal Specific TF
+127	Beaba1|6378	Fungal Specific TF
+128	Beaba1|6381	Fungal Specific TF
+129	Beaba1|6391	Zinc finger, MIZ-type
+130	Beaba1|6398	Fungal Specific TF
+131	Beaba1|6424	Fungal Specific TF
+132	Beaba1|6429	Fungal Specific TF
+133	Beaba1|6440	bZIP
+134	Beaba1|1980	Fungal Specific TF
+135	Beaba1|1981	Fungal Specific TF
+136	Beaba1|1991	Fungal Specific TF
+137	Beaba1|2041	Fungal Specific TF
+138	Beaba1|8510	Fungal Specific TF
+139	Beaba1|8523	Fungal Specific TF
+140	Beaba1|859	Fungal Specific TF
+141	Beaba1|3822	Fungal Specific TF
+142	Beaba1|3856	GATA type zinc finger
+143	Beaba1|3901	Fungal Specific TF
+144	Beaba1|6928	C2H2 zinc finger
+145	Beaba1|6928	Fungal Specific TF
+146	Beaba1|6939	Fungal Specific TF
+147	Beaba1|6946	Bromodomain transcription factor
+148	Beaba1|6961	C2H2 zinc finger
+149	Beaba1|6983	Fungal Specific TF
+150	Beaba1|5610	Histone-like TF
+151	Beaba1|5623	C2H2 zinc finger
+152	Beaba1|5636	Helix-loop-helix
+153	Beaba1|5660	Fungal Specific TF
+154	Beaba1|5668	Fungal Specific TF
+155	Beaba1|5671	Fungal Specific TF
+156	Beaba1|5678	Fungal Specific TF
+157	Beaba1|10354	Zinc finger, CCHC-type
+158	Beaba1|10360	Fungal Specific TF
+159	Beaba1|3177	Fungal Specific TF
+160	Beaba1|3180	Fungal Specific TF
+161	Beaba1|3181	C2H2 zinc finger
+162	Beaba1|3208	Fungal Specific TF
+163	Beaba1|3244	Helix-loop-helix
+164	Beaba1|8712	Fungal Specific TF
+165	Beaba1|8727	Fungal Specific TF
+166	Beaba1|8755	Fungal Specific TF
+167	Beaba1|8777	Fungal Specific TF
+168	Beaba1|8256	Fungal Specific TF
+169	Beaba1|8290	Fungal Specific TF
+170	Beaba1|8304	Fungal Specific TF
+171	Beaba1|3650	bZIP
+172	Beaba1|3659	C2H2 zinc finger
+173	Beaba1|369	Fungal Specific TF
+174	Beaba1|3694	bZIP
+175	Beaba1|3710	Fungal Specific TF
+176	Beaba1|3727	Fungal Specific TF
+177	Beaba1|5985	Fungal Specific TF
+178	Beaba1|6027	Fungal Specific TF
+179	Beaba1|6034	Fungal Specific TF
+180	Beaba1|6057	Fungal Specific TF
+181	Beaba1|6064	GATA type zinc finger
+182	Beaba1|5053	Fungal Specific TF
+183	Beaba1|5101	Fungal Specific TF
+184	Beaba1|512	Fungal Specific TF
+185	Beaba1|5123	Fungal Specific TF
+186	Beaba1|4680	Fungal Specific TF
+187	Beaba1|4682	Fungal Specific TF
+188	Beaba1|4702	Fungal Specific TF
+189	Beaba1|4953	YL1 nuclear protein
+190	Beaba1|4961	Fungal Specific TF
+191	Beaba1|499	Fungal Specific TF
+192	Beaba1|4990	bZIP
+193	Beaba1|501	Fungal Specific TF
+194	Beaba1|5013	Fungal Specific TF
+195	Beaba1|5022	Fungal Specific TF
+196	Beaba1|861	Fungal Specific TF
+197	Beaba1|8640	Fungal Specific TF
+198	Beaba1|627	Fungal Specific TF
+199	Beaba1|6272	bZIP
+200	Beaba1|6282	Fungal Specific TF
+201	Beaba1|6315	Fungal Specific TF
+202	Beaba1|7099	Fungal Specific TF
+203	Beaba1|71	Fungal Specific TF
+204	Beaba1|710	Fungal Specific TF
+205	Beaba1|7119	Fungal Specific TF
+206	Beaba1|712	Fungal Specific TF
+207	Beaba1|7135	Fungal Specific TF
+208	Beaba1|7182	RFX DNA-binding domain
+209	Beaba1|3744	Fungal Specific TF
+210	Beaba1|3786	Fungal Specific TF
+211	Beaba1|3811	C2H2 zinc finger
+212	Beaba1|3811	Fungal Specific TF
+213	Beaba1|2346	Fungal Specific TF
+214	Beaba1|2350	C2H2 zinc finger
+215	Beaba1|237	Fungal Specific TF
+216	Beaba1|2371	GATA type zinc finger
+217	Beaba1|2395	Fungal Specific TF
+218	Beaba1|2416	Centromere protein B, DNA-binding region
+219	Beaba1|6160	Zinc finger, MIZ-type
+220	Beaba1|6171	Fungal Specific TF
+221	Beaba1|6200	Fungal Specific TF
+222	Beaba1|6213	Fungal Specific TF
+223	Beaba1|6216	Fungal Specific TF
+224	Beaba1|6231	Helix-loop-helix
+225	Beaba1|6250	Fungal Specific TF
+226	Beaba1|10102	bZIP
+227	Beaba1|10116	Fungal Specific TF
+228	Beaba1|1014	Fungal Specific TF
+229	Beaba1|10143	Fungal Specific TF
+230	Beaba1|10154	Zinc finger, BED-type predicted
+231	Beaba1|6120	C2H2 zinc finger
+232	Beaba1|6128	Fungal Specific TF
+233	Beaba1|6141	Fungal Specific TF
+234	Beaba1|6148	Fungal Specific TF
+235	Beaba1|6158	Forkhead
+236	Beaba1|8148	Helix-loop-helix
+237	Beaba1|8181	Fungal Specific TF
+238	Beaba1|8191	Fungal Specific TF
+239	Beaba1|8203	Fungal Specific TF
+240	Beaba1|740	Fungal Specific TF
+241	Beaba1|7401	Fungal Specific TF
+242	Beaba1|7418	Fungal Specific TF
+243	Beaba1|7446	AT-rich interaction region
+244	Beaba1|7451	Fungal Specific TF
+245	Beaba1|7453	Fungal Specific TF
+246	Beaba1|7457	Fungal Specific TF
+247	Beaba1|7469	Fungal Specific TF
+248	Beaba1|3090	Fungal Specific TF
+249	Beaba1|3101	Fungal Specific TF
+250	Beaba1|3122	Fungal Specific TF
+251	Beaba1|3169	Fungal Specific TF
+252	Beaba1|4206	Homeodomain
+253	Beaba1|4234	HMG
+254	Beaba1|4253	Helix-turn-helix
+255	Beaba1|4574	Fungal Specific TF
+256	Beaba1|4604	C2H2 zinc finger
+257	Beaba1|4646	Fungal Specific TF
+258	Beaba1|4652	Fungal Specific TF
+259	Beaba1|8785	Fungal Specific TF
+260	Beaba1|880	Fungal Specific TF
+261	Beaba1|882	C2H2 zinc finger
+262	Beaba1|8843	Fungal Specific TF
+263	Beaba1|886	Fungal Specific TF
+264	Beaba1|2935	Fungal Specific TF
+265	Beaba1|2958	Centromere protein B, DNA-binding region
+266	Beaba1|9254	Fungal Specific TF
+267	Beaba1|9298	Fungal Specific TF
+268	Beaba1|9335	Fungal Specific TF
+269	Beaba1|9337	Fungal Specific TF
+270	Beaba1|10233	GATA type zinc finger
+271	Beaba1|10247	HMG
+272	Beaba1|10253	GATA type zinc finger
+273	Beaba1|10254	Fungal Specific TF
+274	Beaba1|10268	Fungal Specific TF
+275	Beaba1|10271	GATA type zinc finger
+276	Beaba1|3954	Fungal Specific TF
+277	Beaba1|3955	Fungal Specific TF
+278	Beaba1|6675	Fungal Specific TF
+279	Beaba1|6721	bZIP
+280	Beaba1|5443	HMG
+281	Beaba1|5464	Fungal Specific TF
+282	Beaba1|5485	Helix-loop-helix
+283	Beaba1|1229	C2H2 zinc finger
+284	Beaba1|1284	Grainyhead/CP2
+285	Beaba1|1304	C2H2 zinc finger
+286	Beaba1|9440	C2H2 zinc finger
+287	Beaba1|9441	GATA type zinc finger
+288	Beaba1|9506	Fungal Specific TF
+289	Beaba1|9512	Fungal Specific TF
+290	Beaba1|2477	Histone-like TF
+291	Beaba1|2505	Homeodomain
+292	Beaba1|2507	Fungal Specific TF
+293	Beaba1|4319	Fungal Specific TF
+294	Beaba1|4322	Fungal Specific TF
+295	Beaba1|4375	Fungal Specific TF
+296	Beaba1|7669	Fungal Specific TF
+297	Beaba1|7683	Fungal Specific TF
+298	Beaba1|7689	Helix-turn-helix
+299	Beaba1|7689	Centromere protein B, DNA-binding region
+300	Beaba1|770	Fungal Specific TF
+301	Beaba1|7733	HMG
+302	Beaba1|3452	Fungal Specific TF
+303	Beaba1|3464	Fungal Specific TF
+304	Beaba1|3467	Fungal Specific TF
+305	Beaba1|3469	C2H2 zinc finger
+306	Beaba1|4491	Zinc finger, CCHC-type
+307	Beaba1|450	Fungal Specific TF
+308	Beaba1|4503	Fungal Specific TF
+309	Beaba1|4517	Fungal Specific TF
+310	Beaba1|4866	C2H2 zinc finger
+311	Beaba1|488	bZIP
+312	Beaba1|4937	Fungal Specific TF
+313	Beaba1|105	Fungal Specific TF
+314	Beaba1|1078	C2H2 zinc finger
+315	Beaba1|1078	STE like TF
+316	Beaba1|1101	Fungal Specific TF
+317	Beaba1|1102	Fungal Specific TF
+318	Beaba1|1117	Fungal Specific TF
+319	Beaba1|7592	Fungal Specific TF
+320	Beaba1|7618	Fungal Specific TF
+321	Beaba1|7636	Fungal Specific TF
+322	Beaba1|10035	Histone-like TF
+323	Beaba1|10036	C2H2 zinc finger
+324	Beaba1|10042	Fungal Specific TF
+325	Beaba1|10047	Fungal Specific TF
+326	Beaba1|10048	Fungal Specific TF
+327	Beaba1|10081	Helix-turn-helix
+328	Beaba1|1701	Fungal Specific TF
+329	Beaba1|1710	Fungal Specific TF
+330	Beaba1|1719	Homeodomain
+331	Beaba1|1719	Centromere protein B, DNA-binding region
+332	Beaba1|1720	GATA type zinc finger
+333	Beaba1|1514	Fungal Specific TF
+334	Beaba1|1545	AT-rich interaction region
+335	Beaba1|1583	C2H2 zinc finger
+336	Beaba1|9189	Fungal Specific TF
+337	Beaba1|3399	Fungal Specific TF
+338	Beaba1|3405	Fungal Specific TF
+339	Beaba1|3449	Fungal Specific TF
+340	Beaba1|3450	Fungal Specific TF
+341	Beaba1|5290	Fungal Specific TF
+342	Beaba1|5298	Helix-turn-helix
+343	Beaba1|5317	Fungal Specific TF
+344	Beaba1|273	Transcription factor TFIIS
+345	Beaba1|2774	Fungal Specific TF
+346	Beaba1|280	Fungal Specific TF
+347	Beaba1|6445	Fungal Specific TF
+348	Beaba1|6451	Fungal Specific TF
+349	Beaba1|5513	GCN5-like 1
+350	Beaba1|5545	Fungal Specific TF
+351	Beaba1|5559	UAF complex subunit Rrn10
+352	Beaba1|9836	Fungal Specific TF
+353	Beaba1|984	C2H2 zinc finger
+354	Beaba1|984	Fungal Specific TF
+355	Beaba1|9853	SGT1
+356	Beaba1|9862	Fungal Specific TF
+357	Beaba1|9870	Zinc finger, CCHC-type
+358	Beaba1|2802	Fungal Specific TF
+359	Beaba1|2826	Fungal Specific TF
+360	Beaba1|2856	CCR4-Not complex component, Not1
+361	Beaba1|2871	Fungal Specific TF
+362	Beaba1|2882	Zinc finger, CCHC-type
+363	Beaba1|9347	Fungal Specific TF
+364	Beaba1|9351	C2H2 zinc finger
+365	Beaba1|9361	Fungal Specific TF
+366	Beaba1|9370	Fungal Specific TF
+367	Beaba1|9380	Fungal Specific TF
+368	Beaba1|9412	Fungal Specific TF
+369	Beaba1|9436	C2H2 zinc finger
+370	Beaba1|9436	Fungal Specific TF
+371	Beaba1|844	Fungal Specific TF
+372	Beaba1|8455	Zinc finger, CCHC-type
+373	Beaba1|8458	Bacterial regulatory protein, LuxR
+374	Beaba1|8470	Fungal Specific TF
+375	Beaba1|72	Fungal Specific TF
+376	Beaba1|7276	Fungal Specific TF
+377	Beaba1|4024	Fungal Specific TF
+378	Beaba1|4034	Fungal Specific TF
+379	Beaba1|4037	Fungal Specific TF
+380	Beaba1|4086	Fungal Specific TF
+381	Beaba1|8959	Fungal Specific TF
+382	Beaba1|8967	Fungal Specific TF
+383	Beaba1|4760	Fungal Specific TF
+384	Beaba1|4773	Fungal Specific TF
+385	Beaba1|4784	Fungal Specific TF
+386	Beaba1|4812	Zinc finger, CCHC-type
+387	Beaba1|4813	bZIP
+388	Beaba1|4837	Fungal Specific TF
+389	Beaba1|2258	Fungal Specific TF
+390	Beaba1|2263	Histone-like TF
+391	Beaba1|2268	Histone-like TF
+392	Beaba1|2286	Homeodomain
+393	Beaba1|2288	Homeodomain
+394	Beaba1|2289	Fungal Specific TF
+395	Beaba1|2324	Zinc finger, PARP-type
+396	Beaba1|2093	Fungal Specific TF
+397	Beaba1|2099	Helix-loop-helix
+398	Beaba1|214	Fungal Specific TF
+399	Beaba1|5745	Helix-turn-helix
+400	Beaba1|5745	Centromere protein B, DNA-binding region
+401	Beaba1|5763	Fungal Specific TF
+402	Beaba1|9917	Zinc finger, CCHC-type
+403	Beaba1|9942	C2H2 zinc finger
+404	Beaba1|9944	Histone-like TF
+405	Beaba1|9945	Histone-like TF
+406	Beaba1|9973	Histone-like TF
+407	Beaba1|9981	C2H2 zinc finger
+408	Beaba1|9992	Fungal Specific TF
+409	Beaba1|4109	Zinc finger, CCHC-type
+410	Beaba1|4116	Forkhead
+411	Beaba1|4124	Fungal Specific TF
+412	Beaba1|4151	Fungal Specific TF
+413	Beaba1|4183	Fungal Specific TF
+414	Beaba1|9723	Fungal Specific TF
+415	Beaba1|9764	Homeodomain
+416	Beaba1|9797	Fungal Specific TF

@@ -1,0 +1,256 @@
+id	proteinId	clusterId	secmet_type
+1	Beaba1|962	1	Decorating
+2	Beaba1|963	1	NRPS-like
+3	Beaba1|964	1	
+4	Beaba1|965	1	Decorating
+5	Beaba1|966	1	Decorating
+6	Beaba1|967	1	PKS
+7	Beaba1|1009	2	Decorating
+8	Beaba1|1010	2	PKS
+9	Beaba1|1805	3	Decorating
+10	Beaba1|1806	3	
+11	Beaba1|1807	3	
+12	Beaba1|1808	3	Decorating
+13	Beaba1|1809	3	
+14	Beaba1|1810	3	NRPS
+15	Beaba1|1811	3	
+16	Beaba1|1812	3	
+17	Beaba1|1813	3	
+18	Beaba1|1814	3	Decorating
+19	Beaba1|1836	4	Decorating
+20	Beaba1|1837	4	
+21	Beaba1|1838	4	
+22	Beaba1|1839	4	
+23	Beaba1|1840	4	
+24	Beaba1|1841	4	PKS
+25	Beaba1|2625	5	Decorating
+26	Beaba1|2626	5	
+27	Beaba1|2627	5	
+28	Beaba1|2628	5	
+29	Beaba1|2629	5	
+30	Beaba1|2630	5	NRPS
+31	Beaba1|3613	6	Decorating
+32	Beaba1|3614	6	
+33	Beaba1|3615	6	Decorating
+34	Beaba1|3616	6	PKS
+35	Beaba1|3617	6	Decorating
+36	Beaba1|3662	7	Decorating
+37	Beaba1|3663	7	
+38	Beaba1|3664	7	
+39	Beaba1|3665	7	
+40	Beaba1|3666	7	Decorating
+41	Beaba1|3667	7	
+42	Beaba1|3668	7	
+43	Beaba1|3669	7	Decorating
+44	Beaba1|3670	7	Decorating
+45	Beaba1|3671	7	NRPS
+46	Beaba1|3799	8	Decorating
+47	Beaba1|3800	8	
+48	Beaba1|3801	8	
+49	Beaba1|3802	8	
+50	Beaba1|3803	8	
+51	Beaba1|3804	8	
+52	Beaba1|3805	8	Decorating
+53	Beaba1|3806	8	Decorating
+54	Beaba1|3807	8	Decorating
+55	Beaba1|3808	8	Decorating
+56	Beaba1|3809	8	
+57	Beaba1|3810	8	PKS
+58	Beaba1|3811	8	Decorating
+59	Beaba1|4024	9	Decorating
+60	Beaba1|4025	9	
+61	Beaba1|4026	9	
+62	Beaba1|4027	9	
+63	Beaba1|4028	9	NRPS-like
+64	Beaba1|4322	10	Decorating
+65	Beaba1|4323	10	
+66	Beaba1|4324	10	
+67	Beaba1|4325	10	
+68	Beaba1|4326	10	
+69	Beaba1|4327	10	PKS-like
+70	Beaba1|4328	10	Decorating
+71	Beaba1|4370	11	Decorating
+72	Beaba1|4371	11	Decorating
+73	Beaba1|4372	11	
+74	Beaba1|4373	11	
+75	Beaba1|4374	11	PKS
+76	Beaba1|4375	11	Decorating
+77	Beaba1|4825	12	Decorating
+78	Beaba1|4826	12	
+79	Beaba1|4827	12	NRPS
+80	Beaba1|4828	12	Decorating
+81	Beaba1|4829	12	Decorating
+82	Beaba1|5011	13	Decorating
+83	Beaba1|5012	13	
+84	Beaba1|5013	13	Decorating
+85	Beaba1|5014	13	
+86	Beaba1|5015	13	Decorating
+87	Beaba1|5016	13	
+88	Beaba1|5017	13	
+89	Beaba1|5018	13	
+90	Beaba1|5019	13	
+91	Beaba1|5020	13	NRPS
+92	Beaba1|5173	14	Decorating
+93	Beaba1|5174	14	
+94	Beaba1|5175	14	
+95	Beaba1|5176	14	PKS-NRPS hybrid
+96	Beaba1|5178	15	Decorating
+97	Beaba1|5179	15	NRPS-like
+98	Beaba1|5939	16	Decorating
+99	Beaba1|5940	16	
+100	Beaba1|5941	16	PKS-like
+101	Beaba1|5942	16	
+102	Beaba1|5943	16	
+103	Beaba1|5944	16	
+104	Beaba1|5945	16	
+105	Beaba1|5946	16	
+106	Beaba1|5947	16	Decorating
+107	Beaba1|6613	17	PKS
+108	Beaba1|6614	17	
+109	Beaba1|6615	17	
+110	Beaba1|6616	17	Decorating
+111	Beaba1|6617	17	
+112	Beaba1|6618	17	
+113	Beaba1|6619	17	
+114	Beaba1|6620	17	Decorating
+115	Beaba1|6725	18	Decorating
+116	Beaba1|6726	18	Decorating
+117	Beaba1|6727	18	NRPS
+118	Beaba1|6883	19	Decorating
+119	Beaba1|6884	19	
+120	Beaba1|6885	19	
+121	Beaba1|6886	19	
+122	Beaba1|6887	19	PKS-like
+123	Beaba1|6888	19	
+124	Beaba1|6889	19	
+125	Beaba1|6890	19	Decorating
+126	Beaba1|6991	20	Decorating
+127	Beaba1|6992	20	Decorating
+128	Beaba1|6993	20	Decorating
+129	Beaba1|6994	20	Decorating
+130	Beaba1|6995	20	
+131	Beaba1|6996	20	
+132	Beaba1|6997	20	NRPS
+133	Beaba1|7334	21	Decorating
+134	Beaba1|7335	21	Decorating
+135	Beaba1|7336	21	Decorating
+136	Beaba1|7337	21	Decorating
+137	Beaba1|7338	21	PKS-NRPS hybrid
+138	Beaba1|7339	21	Decorating
+139	Beaba1|7340	21	Decorating
+140	Beaba1|7341	21	Decorating
+141	Beaba1|7379	22	NRPS-like
+142	Beaba1|7380	22	Decorating
+143	Beaba1|7381	22	
+144	Beaba1|7382	22	
+145	Beaba1|7383	22	
+146	Beaba1|7384	22	
+147	Beaba1|7385	22	Decorating
+148	Beaba1|7420	23	PKS
+149	Beaba1|7548	24	NRPS
+150	Beaba1|7549	24	Decorating
+151	Beaba1|7550	24	
+152	Beaba1|7551	24	Decorating
+153	Beaba1|7552	24	
+154	Beaba1|7553	24	
+155	Beaba1|7554	24	Decorating
+156	Beaba1|7588	25	Decorating
+157	Beaba1|7589	25	NRPS
+158	Beaba1|7590	25	Decorating
+159	Beaba1|7591	25	
+160	Beaba1|7592	25	Decorating
+161	Beaba1|7611	26	NRPS-like
+162	Beaba1|7612	26	Decorating
+163	Beaba1|7613	26	Decorating
+164	Beaba1|8179	27	PKS
+165	Beaba1|8180	27	Decorating
+166	Beaba1|8181	27	Decorating
+167	Beaba1|8182	27	Decorating
+168	Beaba1|8183	27	
+169	Beaba1|8184	27	Decorating
+170	Beaba1|8217	28	Decorating
+171	Beaba1|8218	28	Decorating
+172	Beaba1|8219	28	PKS
+173	Beaba1|8220	28	Decorating
+174	Beaba1|8221	28	
+175	Beaba1|8222	28	NRPS
+176	Beaba1|8241	29	Decorating
+177	Beaba1|8242	29	
+178	Beaba1|8243	29	
+179	Beaba1|8244	29	
+180	Beaba1|8245	29	
+181	Beaba1|8246	29	NRPS-like
+182	Beaba1|8247	29	
+183	Beaba1|8248	29	
+184	Beaba1|8249	29	Decorating
+185	Beaba1|8280	30	NRPS-like
+186	Beaba1|8424	31	NRPS
+187	Beaba1|8425	31	Decorating
+188	Beaba1|8426	31	Decorating
+189	Beaba1|8427	31	
+190	Beaba1|8428	31	
+191	Beaba1|8429	31	
+192	Beaba1|8430	31	
+193	Beaba1|8431	31	Decorating
+194	Beaba1|8697	32	Decorating
+195	Beaba1|8698	32	Decorating
+196	Beaba1|8699	32	NRPS-like
+197	Beaba1|8700	32	
+198	Beaba1|8701	32	
+199	Beaba1|8702	32	
+200	Beaba1|8703	32	
+201	Beaba1|8704	32	
+202	Beaba1|8705	32	Decorating
+203	Beaba1|8706	32	Decorating
+204	Beaba1|8707	32	Decorating
+205	Beaba1|8708	32	Decorating
+206	Beaba1|8777	33	Decorating
+207	Beaba1|8778	33	
+208	Beaba1|8779	33	Decorating
+209	Beaba1|8780	33	Decorating
+210	Beaba1|8781	33	
+211	Beaba1|8782	33	
+212	Beaba1|8783	33	Terpene
+213	Beaba1|8784	33	Decorating
+214	Beaba1|8785	33	Decorating
+215	Beaba1|8786	33	Decorating
+216	Beaba1|8787	33	Decorating
+217	Beaba1|8788	33	Decorating
+218	Beaba1|8789	33	
+219	Beaba1|8790	33	Decorating
+220	Beaba1|9118	34	Decorating
+221	Beaba1|9119	34	
+222	Beaba1|9120	34	
+223	Beaba1|9121	34	
+224	Beaba1|9122	34	
+225	Beaba1|9123	34	Decorating
+226	Beaba1|9124	34	
+227	Beaba1|9125	34	Decorating
+228	Beaba1|9126	34	
+229	Beaba1|9127	34	NRPS-like
+230	Beaba1|9720	35	Decorating
+231	Beaba1|9721	35	
+232	Beaba1|9722	35	
+233	Beaba1|9723	35	
+234	Beaba1|9724	35	
+235	Beaba1|9725	35	
+236	Beaba1|9726	35	
+237	Beaba1|9727	35	NRPS
+238	Beaba1|9728	35	
+239	Beaba1|9729	35	
+240	Beaba1|9730	35	
+241	Beaba1|9731	35	
+242	Beaba1|9732	35	Decorating
+243	Beaba1|9733	35	Decorating
+244	Beaba1|9744	36	Decorating
+245	Beaba1|9745	36	PKS
+246	Beaba1|9746	36	Decorating
+247	Beaba1|9856	37	PKS-NRPS hybrid
+248	Beaba1|9857	37	
+249	Beaba1|9858	37	Decorating
+250	Beaba1|9859	37	
+251	Beaba1|9860	37	
+252	Beaba1|9861	37	
+253	Beaba1|9862	37	Decorating
+254	Beaba1|10105	38	NRPS
+255	Beaba1|10302	39	PKS
