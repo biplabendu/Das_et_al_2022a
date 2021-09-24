@@ -102,7 +102,7 @@ expressed <-
 ## Note, ordered according to their p-value; highly rhythmic at the top.
 #
 # Choose period
-period = '24'
+period = '08'
 
 # Ultradian genes (period = 8h)
 ## 
@@ -132,7 +132,7 @@ my_hclust_gene <- hclust(dist(zscore.rhy), method = "complete")
 
 
 # Make annotations for the heatmaps
-my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 4) # four clusters
+my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 2) # k=  clusters
 my_gene_col <- data.frame(cluster = my_gene_col)
 
 
@@ -145,7 +145,7 @@ row.names(my_sample_col) <- colnames(zscore.rhy)
 # Manual color palette
 my_colour = list(
   phase = c(light = "#F2E205", dark = "#010440"),
-  cluster = viridis::cividis(100)[c(10,90,60,30)])
+  cluster = viridis::cividis(100)[c(40,60)])
 
 # Color scale
 my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.1)
@@ -156,7 +156,7 @@ rhy.heat <-
   pheatmap(zscore.rhy, show_rownames = F, show_colnames = F,
                          annotation_row = my_gene_col, 
                          annotation_col = my_sample_col,
-                         cutree_rows = 4,
+                         cutree_rows = 2, # OG was 4
                          cutree_cols = 2,
                          annotation_colors = my_colour,
                          border_color=FALSE,
@@ -182,7 +182,7 @@ save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
   grid::grid.draw(x$gtable)
   dev.off()
 }
-name.path.file <- paste0('./results/heatmap/rhy_heatmap_',sample.name,'_',period,'h.pdf')
+name.path.file <- paste0('./results/heatmap/rhy_heatmap_',sample.name,'_',period,'h_2clusters.pdf')
 save_pheatmap_pdf(rhy.heat, name.path.file)
   
 # run enrichment for day/night-peaking clusters ---------------------------
