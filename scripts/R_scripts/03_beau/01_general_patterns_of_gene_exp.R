@@ -56,7 +56,7 @@ not.expressed <-
 # A2: run enrichment (make plot of enrichment found of non-expressed genes)
 not.expressed %>% 
   go_enrichment(., 
-                org = "ophio_cflo", 
+                org = "beau", 
                 bg = 'all') %>%  # enrichment against all ophio_cflo genes in the genome
   go_enrichment_plot(clean = "no")
   

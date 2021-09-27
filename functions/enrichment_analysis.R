@@ -47,6 +47,16 @@ go_enrichment <- function(geneset,
       
       print("Done.")
       
+    } else if (org=="beau"){
+      
+      print("Loading annotation file for Beauveria bassiana")
+      all_genes <- read.csv(paste0(function.dir,"/functions/func_data/beau_annots_robin_ncbi.csv"), 
+                            header=T, stringsAsFactors = F, na.strings = c(NA,""," "))
+      # define the separator
+      separator = "; "
+      
+      print("Done.")
+      
     } else {
       
       print("Invalid option for argument org.")

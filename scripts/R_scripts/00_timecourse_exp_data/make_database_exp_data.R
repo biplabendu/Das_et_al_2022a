@@ -259,29 +259,32 @@ src_dbi(my.db)
 
 beau <- read.csv("./results/normalized_gene_exp/raw_fpkm/beau/TC6_gene_exp.csv",
                    header = T, stringsAsFactors = F, na.strings = c(NA, "", " "))
-# Save file to database
-dbWriteTable(my.db, "beau_fpkm", beau)
 
-# check if table is added in the database (by checking all tables)
-# src_dbi(my.db)
-
-### CVS made with pyhton is diffrent than the one made with R, so we going to transform the python csv to the same format as the R csv
-# load tho look at how the file should be structured
-o.cflo <- read.csv("./results/normalized_gene_exp/raw_fpkm/ophio_cflo/normalized_gene_exp_ophio_cflo_all_samples.csv")
-                   #                    header = T, stringsAsFactors = F, na.strings = c(NA, "", " "))
-# python csv has addiotional cols (index, gene_id, and locus)
-# so we romove those cols first
+## python csv has addiotional cols (index, gene_id, and locus)
+## so we romove those cols first
 beau$gene_id <- NULL
 beau$X <- NULL
 beau$locus <- NULL
 
-# The python csv also has other colnames for the samples (nl sample_* vs ZT*)
-# First extract right colnames from ocflo DF
+### CVS made with pyhton is diffrent than the one made with R, so we going to transform the python csv to the same format as the R csv
+# load tho look at how the file should be structured
+o.cflo <- read.csv("./results/normalized_gene_exp/raw_fpkm/ophio_cflo/normalized_gene_exp_ophio_cflo_all_samples.csv")
+#                    header = T, stringsAsFactors = F, na.strings = c(NA, "", " "))
+
+## The python csv also has other colnames for the samples (nl sample_* vs ZT*)
+## First extract right colnames from ocflo DF
 new.col.names <- colnames(o.cflo)
-# change the colnames of beau DF
+## change the colnames of beau DF
 colnames(beau) <- new.col.names
 
+
+# Save file to database
+dbWriteTable(my.db, "beau_fpkm", beau)
+
 ### Now the beau DF is the same format as the others 
+
+# check if table is added in the database (by checking all tables)
+src_dbi(my.db)
 
 # A. Expressed genes ---------------------------------------------------------
 
