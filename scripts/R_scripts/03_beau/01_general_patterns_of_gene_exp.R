@@ -43,7 +43,7 @@ src_dbi(data.db)
 
 # Specify the focal sample for analysis -----------------------------------
 
-sample.name = "ophio_cflo"
+sample.name = "beau"
 
 # 01. General patterns of gene expression ---------------------------------
 
@@ -53,6 +53,12 @@ not.expressed <-
   collect() %>% 
   filter_at(vars(starts_with("Z")), all_vars(. == 0)) %>%
   pull(gene_name)
+
+# Write all the non-expressed genes to a file
+
+write(not.expressed, file = paste0('./results/',{sample.name},'_not_expressed_list.txt'),
+     sep = " ")
+
 # A2: run enrichment (make plot of enrichment found of non-expressed genes)
 not.expressed %>% 
   go_enrichment(., 
@@ -102,7 +108,7 @@ expressed <-
 ## Note, ordered according to their p-value; highly rhythmic at the top.
 #
 # Choose period
-period = '08'
+period = '24'
 
 # Ultradian genes (period = 8h)
 ## 
@@ -204,7 +210,7 @@ rhy.24.daypeaking.cluster3 <-
   pull(gene) %>%
   # run enrichment analysis
   go_enrichment(.,
-                org = "ophio_cflo",
+                org = "beau",
                 bg = expressed) # enrichment against all expressed ophio_cflo genes
 # view the results
 rhy.24.daypeaking.cluster3 %>% view()
@@ -216,7 +222,7 @@ rhy.24.nightpeaking.cluster1 <-
   filter(cluster == 1) %>%
   pull(gene) %>%
   go_enrichment(.,
-                org = "ophio_cflo",
+                org = "beau",
                 bg = "expressed")
 # view the results
 rhy.24.nightpeaking.cluster1 %>% view()
