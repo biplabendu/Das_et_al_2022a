@@ -60,7 +60,7 @@ go_enrichment <- function(geneset,
     } else {
       
       print("Invalid option for argument org.")
-      print("Select from: ophio_cflo, ophio_kim, cflo")
+      print("Select from: ophio_cflo, ophio_kim, cflo, beau")
       stop()
     }
   
@@ -71,7 +71,10 @@ go_enrichment <- function(geneset,
     #' Let's replace the NAs in GOs and pfams with "no_annot"
     all_genes[is.na(all_genes)] <- "no_annot"
     #' Let's flatten the files
-    all_genes_gos <- all_genes %>%
+    all_genes_gos <-
+      all_genes %>% 
+      # EDIT on 29Sep21: removing trailing and leading whitespace from the columns
+      mutate_if(is.character, str_trim) %>%
       dplyr::mutate(go_split = str_split(GOs, separator)) %>%
       unnest() %>%
       #dplyr::select(-GO) %>%
@@ -114,9 +117,10 @@ go_enrichment <- function(geneset,
   ## Enrichment to be tested for all GO terms that are:
     ## 1. Present in the test geneset
     ## 2. all unique GO terms each present in at least x number of genes
-      annot_terms <- background %>%
+      annot_terms <-
+        background %>% 
         # Keep only the genes in my test geneset
-        filter(gene_name %in% genes) %>%
+        filter(gene_name %in% genes) %>% 
         group_by(GO) %>%
         summarize(num_genes = n()) %>%
         arrange(num_genes) %>%
