@@ -40,7 +40,7 @@ conflict_prefer("layout", "plotly")
 conflict_prefer("hclust", "flashClust")
 
 #' set path to your working directory
-path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022b"
+path_to_repo = "./Das_et_al_2022b"
 
 #' load functions
 # customized theme for publication quality figures
@@ -71,7 +71,7 @@ Dataset: Healthy (uninfected, uninjected) Cflo forager ant heads (three pooled p
 db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC7_data.db"))
 
 # specify sample name
-sample.name <- "cflo_control"
+sample.name <- "beau"
 
 # extract the (gene-expr X time-point) data
 dat <-
@@ -148,8 +148,8 @@ ggplot(x, aes(x=value, color=sample)) + geom_density() + theme_Publication()
 ```{r gene_sim_matrix}
 # Calculate Kendall's tau-b correlation for each gene-gene pair
 
-# sim_matrix <- cor((datExpr), method = "kendall") # this step takes time
-# save(sim_matrix, file = paste0(path_to_repo, "/results/temp_files/sim_matrix_", sample.name, "_TC7.RData")) # might be useful to save the sim_matrix and
+sim_matrix <- cor((datExpr), method = "kendall") # this step takes time
+save(sim_matrix, file = paste0(path_to_repo, "/results/temp_files/sim_matrix_", sample.name, "_TC7.RData")) # might be useful to save the sim_matrix and
 load(paste0(path_to_repo, "/results/temp_files/sim_matrix_", sample.name, "_TC7.RData")) # load it up
 
 ## Let's display a chunk of the matrix (code from Hughitt 2016; github)
