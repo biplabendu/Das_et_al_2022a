@@ -13,16 +13,24 @@ conflict_prefer("filter", "dplyr")
 conflict_prefer("layout", "plotly")
 #
 ## load functions ---------
+# functions for enrichment
 source("./functions/enrichment_analysis.R")
+# customized theme for publication quality figures
+source("/functions/theme_publication.R"))
 #
 ## set parameters and thresholds --------
 #
 # gamma-pvalue threshold for inferring rhythmicity
 gamma.pval = 0.05
 #
+# specify sample for analysis
+sample.name <- 'beau'
+#
 ## Path to save files
 # # for supplementary files
 # supp.path="~/University\ of\ Central\ Florida/Charissa\ De\ Bekker\ -\ Ant-Fungus-Clock-Interactions/04_manuscript/03_supplementary_files/"
+
+
 
 # 00. Load Databases -----------------------------------------------------------
 #
@@ -54,12 +62,14 @@ not.expressed <-
   filter_at(vars(starts_with("Z")), all_vars(. == 0)) %>%
   pull(gene_name)
 
+# How many genes are not expressed?
+length(not.expressed)
+#
 # Write all the non-expressed genes to a file
-
 write(not.expressed, file = paste0('./results/',{sample.name},'_not_expressed_list.txt'),
      sep = " ")
 
-# A2: run enrichment (make plot of enrichment found of non-expressed genes)
+# A: run enrichment (make plot of enrichment found of non-expressed genes)
 not.expressed %>% 
   go_enrichment(., 
                 org = "beau", 
@@ -72,6 +82,10 @@ expressed <-
   filter(expressed=="yes") %>% 
   collect() %>% 
   pull(gene_name)
+#
+# How many genes are expressed?
+length(expressed)
+
 
 
 # 02. Diurnal rhythms in gene expression ----------------------------------
@@ -117,6 +131,10 @@ rhy <-
   filter(GammaP < gamma.pval) %>%
   select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
   select(ID) %>% pull()
+
+# How many genes are rythmic?
+length(rhy)
+print(past0("genes are rythmic expression during", period,"hours"))
 
 ## load zscore dataset
 zscore.dat <- data.db %>% tbl(., paste0(sample.name,"_zscores")) %>% collect()
@@ -198,6 +216,7 @@ save_pheatmap_pdf(rhy.heat, name.path.file)
   # save the results as csvs &
   # plot the enrichment results.
 
+# Which clusters are day and night peaking? 
 # from eye-balling the heatmap from above
   # day-peaking cluster: cluster-3
   # night-peaking cluster: cluster-1
@@ -206,7 +225,7 @@ save_pheatmap_pdf(rhy.heat, name.path.file)
 rhy.24.daypeaking.cluster3 <-
   my_gene_col %>%
   rownames_to_column(var = "gene") %>%
-  filter(cluster == 3) %>%
+  filter(cluster == 3) %>% # NAME here the cluster
   pull(gene) %>%
   # run enrichment analysis
   go_enrichment(.,
@@ -214,6 +233,15 @@ rhy.24.daypeaking.cluster3 <-
                 bg = expressed) # enrichment against all expressed ophio_cflo genes
 # view the results
 rhy.24.daypeaking.cluster3 %>% view()
+#
+# Plotting the enriched GOs for day-peaking clusters
+rhy.24.daypeaking.cluster.3 %>%
+  go_enrichment_plot(clean = "no",
+                     # function.dir = path_to_repo,
+                     fdr = 5)
+# # view the results
+# rhy.24.daypeaking.cluster.3.4 %>% head() %>% view()
+
 
 ## night-peaking | cluster 1 ##
 rhy.24.nightpeaking.cluster1 <-
@@ -226,4 +254,12 @@ rhy.24.nightpeaking.cluster1 <-
                 bg = "expressed")
 # view the results
 rhy.24.nightpeaking.cluster1 %>% view()
+#
+# plotting the enriched GOs for night-peaking clusters")
+# plot the enriched GOs
+rhy.24.nightpeaking.cluster.1.2 %>%
+  go_enrichment_plot(clean = "no", 
+                     # function.dir = path_to_repo,
+                     fdr = 5)
+
 
