@@ -3,6 +3,9 @@
 set.seed(420)
 rm(list = ls())
 #
+# set working dirictory
+setwd("~/Dropbox/Ant-fungus/02_git/Git_Das_folder2/Das_et_al_2022a")
+#
 ## Load packages ----------
 pacman::p_load(pheatmap, dendextend, tidyverse, viridis, ggthemes)
 pacman::p_load(RSQLite, tidyverse, dbplyr, DT, conflicted)
@@ -16,15 +19,13 @@ conflict_prefer("layout", "plotly")
 # functions for enrichment
 source("./functions/enrichment_analysis.R")
 # customized theme for publication quality figures
-source("/functions/theme_publication.R"))
+source("../Das_et_al_2022b/functions/theme_publication.R")
 #
 ## set parameters and thresholds --------
 #
 # gamma-pvalue threshold for inferring rhythmicity
 gamma.pval = 0.05
 #
-# specify sample for analysis
-sample.name <- 'beau'
 #
 ## Path to save files
 # # for supplementary files
@@ -37,23 +38,28 @@ sample.name <- 'beau'
 # 1. TC7_ejtk.db
 # Desc: This database contains all ejtk-output for TC7
 ejtk.db <- dbConnect(RSQLite::SQLite(),
-                   "./data/databases/TC6_fungal_ejtk.db")
+                   "./Das_et_al_2022a/data/databases/TC6_fungal_ejtk.db")
 # which tables are in the database
 src_dbi(ejtk.db)
 #
 # 2. TC7_data.db
 data.db <- dbConnect(RSQLite::SQLite(),
-                     "./data/databases/TC6_fungal_data.db")
+                     "./Das_et_al_2022a/data/databases/TC6_fungal_data.db")
 src_dbi(data.db)
 #
 ##
 
-
-# Specify the focal sample for analysis -----------------------------------
-
-sample.name = "beau"
-
 # 01. General patterns of gene expression ---------------------------------
+#
+# specify sample for analysis
+sample.name <- 'beau'
+#
+# number of all genes
+all.genes <- tbl(data.db, paste0(sample.name ,"_fpkm")) %>%  
+  collect() %>% 
+  pull(gene_name)
+
+length(all.genes)
 
 # A1: genes that have NO expression (FPKM == 0 at all time points)
 not.expressed <-
@@ -66,13 +72,12 @@ not.expressed <-
 length(not.expressed)
 #
 # Write all the non-expressed genes to a file
-write(not.expressed, file = paste0('./results/',{sample.name},'_not_expressed_list.txt'),
-     sep = " ")
+# write(not.expressed, file = paste0('./results/',{sample.name},'_not_expressed_list.txt'), sep = " ")
 
 # A: run enrichment (make plot of enrichment found of non-expressed genes)
 not.expressed %>% 
   go_enrichment(., 
-                org = "beau", 
+                org = 'ophio_cflo', 
                 bg = 'all') %>%  # enrichment against all ophio_cflo genes in the genome
   go_enrichment_plot(clean = "no")
   
@@ -134,7 +139,7 @@ rhy <-
 
 # How many genes are rythmic?
 length(rhy)
-print(past0("genes are rythmic expression during", period,"hours"))
+print(paste0("genes are rythmic expression during", period,"hours"))
 
 ## load zscore dataset
 zscore.dat <- data.db %>% tbl(., paste0(sample.name,"_zscores")) %>% collect()
@@ -156,7 +161,7 @@ my_hclust_gene <- hclust(dist(zscore.rhy), method = "complete")
 
 
 # Make annotations for the heatmaps
-my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 2) # k=  clusters
+my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 4) # k=  clusters
 my_gene_col <- data.frame(cluster = my_gene_col)
 
 
@@ -169,7 +174,7 @@ row.names(my_sample_col) <- colnames(zscore.rhy)
 # Manual color palette
 my_colour = list(
   phase = c(light = "#F2E205", dark = "#010440"),
-  cluster = viridis::cividis(100)[c(40,60)])
+  cluster = viridis::cividis(100)[c(10,90,60,30)])
 
 # Color scale
 my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.1)
@@ -180,7 +185,7 @@ rhy.heat <-
   pheatmap(zscore.rhy, show_rownames = F, show_colnames = F,
                          annotation_row = my_gene_col, 
                          annotation_col = my_sample_col,
-                         cutree_rows = 2, # OG was 4
+                         cutree_rows = 4, # OG was 4
                          cutree_cols = 2,
                          annotation_colors = my_colour,
                          border_color=FALSE,
@@ -198,16 +203,16 @@ rhy.heat <-
                          legend = T)
 
 # To save the heatmap to a pdf, run this code. For this to work make sure the heatmap is stored in the variable rhy.heat
-save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
-  stopifnot(!missing(x))
-  stopifnot(!missing(filename))
-  pdf(filename, width=width, height=height)
-  grid::grid.newpage()
-  grid::grid.draw(x$gtable)
-  dev.off()
-}
-name.path.file <- paste0('./results/heatmap/rhy_heatmap_',sample.name,'_',period,'h_2clusters.pdf')
-save_pheatmap_pdf(rhy.heat, name.path.file)
+# save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
+#   stopifnot(!missing(x))
+#   stopifnot(!missing(filename))
+#   pdf(filename, width=width, height=height)
+#   grid::grid.newpage()
+#   grid::grid.draw(x$gtable)
+#   dev.off()
+# }
+# name.path.file <- paste0('./results/heatmap/rhy_heatmap_',sample.name,'_',period,'h_2clusters.pdf')
+# save_pheatmap_pdf(rhy.heat, name.path.file)
   
 # run enrichment for day/night-peaking clusters ---------------------------
 
@@ -222,20 +227,20 @@ save_pheatmap_pdf(rhy.heat, name.path.file)
   # night-peaking cluster: cluster-1
 
 ## day-peaking | cluster 3 ##
-rhy.24.daypeaking.cluster3 <-
+rhy.daypeaking.cluster <-
   my_gene_col %>%
   rownames_to_column(var = "gene") %>%
-  filter(cluster == 3) %>% # NAME here the cluster
+  filter(cluster %in% 1) %>% # NAME here the cluster
   pull(gene) %>%
-  # run enrichment analysis
+# run enrichment analysis
   go_enrichment(.,
-                org = "beau",
-                bg = expressed) # enrichment against all expressed ophio_cflo genes
+                org = sample.name,
+                bg = 'expressed') # enrichment against all expressed ophio_cflo genes
 # view the results
-rhy.24.daypeaking.cluster3 %>% view()
+rhy.daypeaking.cluster %>% view()
 #
 # Plotting the enriched GOs for day-peaking clusters
-rhy.24.daypeaking.cluster.3 %>%
+rhy.daypeaking.cluster %>%
   go_enrichment_plot(clean = "no",
                      # function.dir = path_to_repo,
                      fdr = 5)
@@ -251,7 +256,7 @@ rhy.24.nightpeaking.cluster1 <-
   pull(gene) %>%
   go_enrichment(.,
                 org = "beau",
-                bg = "expressed")
+                bg = expressed)
 # view the results
 rhy.24.nightpeaking.cluster1 %>% view()
 #
