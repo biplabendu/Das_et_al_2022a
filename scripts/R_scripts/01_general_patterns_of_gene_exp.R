@@ -38,13 +38,13 @@ gamma.pval = 0.05
 # 1. TC7_ejtk.db
 # Desc: This database contains all ejtk-output for TC7
 ejtk.db <- dbConnect(RSQLite::SQLite(),
-                   "./Das_et_al_2022a/data/databases/TC6_fungal_ejtk.db")
+                   "./data/databases/TC6_fungal_ejtk.db")
 # which tables are in the database
 src_dbi(ejtk.db)
 #
 # 2. TC7_data.db
 data.db <- dbConnect(RSQLite::SQLite(),
-                     "./Das_et_al_2022a/data/databases/TC6_fungal_data.db")
+                     "./data/databases/TC6_fungal_data.db")
 src_dbi(data.db)
 #
 ##
@@ -70,6 +70,7 @@ not.expressed <-
 
 # How many genes are not expressed?
 length(not.expressed)
+
 #
 # Write all the non-expressed genes to a file
 # write(not.expressed, file = paste0('./results/',{sample.name},'_not_expressed_list.txt'), sep = " ")
@@ -77,7 +78,7 @@ length(not.expressed)
 # A: run enrichment (make plot of enrichment found of non-expressed genes)
 not.expressed %>% 
   go_enrichment(., 
-                org = 'ophio_cflo', 
+                org = sample.name, 
                 bg = 'all') %>%  # enrichment against all ophio_cflo genes in the genome
   go_enrichment_plot(clean = "no")
   
@@ -161,7 +162,7 @@ my_hclust_gene <- hclust(dist(zscore.rhy), method = "complete")
 
 
 # Make annotations for the heatmaps
-my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 4) # k=  clusters
+my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 2) # k=  clusters
 my_gene_col <- data.frame(cluster = my_gene_col)
 
 
@@ -185,7 +186,7 @@ rhy.heat <-
   pheatmap(zscore.rhy, show_rownames = F, show_colnames = F,
                          annotation_row = my_gene_col, 
                          annotation_col = my_sample_col,
-                         cutree_rows = 4, # OG was 4
+                         cutree_rows = 2, # OG was 4
                          cutree_cols = 2,
                          annotation_colors = my_colour,
                          border_color=FALSE,
@@ -230,12 +231,12 @@ rhy.heat <-
 rhy.daypeaking.cluster <-
   my_gene_col %>%
   rownames_to_column(var = "gene") %>%
-  filter(cluster %in% 1) %>% # NAME here the cluster
+  filter(cluster == 1) %>% # NAME here the cluster
   pull(gene) %>%
 # run enrichment analysis
   go_enrichment(.,
                 org = sample.name,
-                bg = 'expressed') # enrichment against all expressed ophio_cflo genes
+                bg = expressed) # enrichment against all expressed ophio_cflo genes
 # view the results
 rhy.daypeaking.cluster %>% view()
 #
@@ -249,7 +250,7 @@ rhy.daypeaking.cluster %>%
 
 
 ## night-peaking | cluster 1 ##
-rhy.24.nightpeaking.cluster1 <-
+rhy.nightpeaking.cluster <-
   my_gene_col %>%
   rownames_to_column(var = "gene") %>%
   filter(cluster == 1) %>%
@@ -258,7 +259,7 @@ rhy.24.nightpeaking.cluster1 <-
                 org = "beau",
                 bg = expressed)
 # view the results
-rhy.24.nightpeaking.cluster1 %>% view()
+rhy.nightpeaking.cluster %>% view()
 #
 # plotting the enriched GOs for night-peaking clusters")
 # plot the enriched GOs
