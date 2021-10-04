@@ -4,7 +4,7 @@ set.seed(420)
 rm(list = ls())
 #
 # set working dirictory
-setwd("~/Dropbox/Ant-fungus/02_git/Git_Das_folder2/Das_et_al_2022a")
+# setwd("~/Dropbox/Ant-fungus/02_git/Git_Das_folder2/Das_et_al_2022a")
 #
 ## Load packages ----------
 pacman::p_load(pheatmap, dendextend, tidyverse, viridis, ggthemes)
@@ -231,7 +231,7 @@ rhy.heat <-
 rhy.daypeaking.cluster <-
   my_gene_col %>%
   rownames_to_column(var = "gene") %>%
-  filter(cluster == 1) %>% # NAME here the cluster
+  filter(cluster == 2) %>% # NAME here the cluster
   pull(gene) %>%
 # run enrichment analysis
   go_enrichment(.,
@@ -258,14 +258,20 @@ rhy.nightpeaking.cluster <-
   go_enrichment(.,
                 org = "beau",
                 bg = expressed)
-# view the results
-rhy.nightpeaking.cluster %>% view()
+
+# view the results and save GO-terms enriched with their p-value to csv
+rhy.nightpeaking.cluster %>% 
+  filter(adj_pVal < 0.05) %>% 
+  filter(over_under == "over") %>% 
+  select(GO, adj_pVal) %>% 
+  write.csv(., file = "./results/billu_beau_night_peaking.csv", row.names = F)
+  # view()
 #
 # plotting the enriched GOs for night-peaking clusters")
 # plot the enriched GOs
-rhy.24.nightpeaking.cluster.1.2 %>%
+rhy.nightpeaking.cluster %>%
   go_enrichment_plot(clean = "no", 
                      # function.dir = path_to_repo,
-                     fdr = 5)
+                     fdr = 1)
 
 
