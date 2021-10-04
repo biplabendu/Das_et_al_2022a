@@ -63,12 +63,13 @@ for (i in periods) {
   #
   # Note: ophio.cflo.24.zscore is exactly the same as ophio.cflo.24 meaning that using
   #       FPKM values or z-scores to run eJTK does not change the result
-  #
-  ## Period
+
+  # Period
   zscore <- read.csv(csv.name,
                      sep = "\t", header = T, stringsAsFactors = F)
-  zscore %>% 
+  zscore %>%
     head()
   # Save file to database
   dbWriteTable(my.db, name, zscore)
 }
+
