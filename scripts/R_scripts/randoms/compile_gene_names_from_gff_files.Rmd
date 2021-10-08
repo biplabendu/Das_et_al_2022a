@@ -282,7 +282,7 @@ ophio_cflo_gff_robin_ncbi <-
 
 # SAVE THE FILE
 write.csv(ophio_cflo_gff_robin_ncbi, 
-          file = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a/data/input/ophio_cflo/gffs/ophio_kim_gene_names_robin_ncbi.csv",
+          file = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a/data/input/ophio_cflo/gffs/ophio_cflo_gene_names_robin_ncbi.csv",
           row.names = F)
 
 ```

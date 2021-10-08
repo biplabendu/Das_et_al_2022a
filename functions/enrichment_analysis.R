@@ -88,11 +88,34 @@ go_enrichment <- function(geneset,
       background <- all_genes_gos %>%
         arrange(gene_name)
       
+    } else if (bg == "rhytmic") {
+      
+      if (org=="ophio_cflo") {
+        
+        foo <- tbl(dbConnect(RSQLite::SQLite(),paste0(data.dir,"/data/databases/TC6_fungal_ejtk.db")), 
+                   "ophio_cflo_rhytmic_genes") %>% 
+          filter(rhytmic=="yes") %>% 
+          collect() %>% pull(gene_name) %>% as.character()
+        background <- all_genes_gos %>%
+          # filter and keep user specified background geneset 
+          filter(gene_name %in% foo) %>%
+          arrange(gene_name) 
+      }
+      if (org=="beau") {
+        ### filter the rythmic genes code
+        bar <- tbl(dbConnect(RSQLite::SQLite(), paste0(data.dir,"/data/datbases/TC6_fungal_ejtk.db")),
+                   "beau_rhytmic_genes") %>%
+                      filter(rhytmic=="yes") %>%
+                      collect() %>% pull(gene_name) %>% as.character()
+        backgroud <- all_genes_gos %>%
+          filter(gene_name %in% bar) %>%
+          arrange(gene_name)
+      }
     } else if (bg == "expressed") {
 
       ## If-else statement to load the expressed geneset for the organism
       
-        if (org=="ophio_cflo"){
+        if (org=="ophio_cflo") {
           
           foo <- tbl(dbConnect(RSQLite::SQLite(),paste0(data.dir,"/data/databases/TC6_fungal_data.db")), 
                      "ophio_cflo_expressed_genes") %>% 
@@ -103,6 +126,16 @@ go_enrichment <- function(geneset,
             filter(gene_name %in% foo) %>%
             arrange(gene_name)
         }
+        if (org=="beau") {
+          foo <- tbl(dbConnect(RSQLite::SQLite(),paste0(data.dir,"/data/databases/TC6_fungal_data.db")), 
+                     "beau_expressed_genes") %>% 
+            filter(expressed=="yes") %>% 
+            collect() %>% pull(gene_name) %>% as.character()
+          background <- all_genes_gos %>%
+            # filter and keep user specified background geneset 
+            filter(gene_name %in% foo) %>%
+            arrange(gene_name)
+      }
       
     } else (
       background <- all_genes_gos %>%

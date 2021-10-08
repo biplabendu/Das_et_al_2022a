@@ -231,15 +231,21 @@ rhy.heat <-
 rhy.daypeaking.cluster <-
   my_gene_col %>%
   rownames_to_column(var = "gene") %>%
-  filter(cluster == 2) %>% # NAME here the cluster
-  pull(gene) %>%
+  filter(cluster == 1) %>% # NAME here the cluster
+  pull(gene) #%>%
+
+# save day peaking cluster to a file
+cluster.file.name.D <- paste0('./results/peaking_clusters/dusk_peaking_Ncbi_IDs_',sample.name,'_',period,'h.txt')
+lapply(rhy.daypeaking.cluster, write, cluster.file.name.D, append=TRUE, ncolumns=1000)
+length(rhy.daypeaking.cluster)
+
 # run enrichment analysis
   go_enrichment(.,
                 org = sample.name,
                 bg = expressed) # enrichment against all expressed ophio_cflo genes
 # view the results
 rhy.daypeaking.cluster %>% view()
-#
+
 # Plotting the enriched GOs for day-peaking clusters
 rhy.daypeaking.cluster %>%
   go_enrichment_plot(clean = "no",
@@ -254,24 +260,30 @@ rhy.nightpeaking.cluster <-
   my_gene_col %>%
   rownames_to_column(var = "gene") %>%
   filter(cluster == 1) %>%
-  pull(gene) %>%
-  go_enrichment(.,
-                org = "beau",
-                bg = expressed)
+  pull(gene) 
 
-# view the results and save GO-terms enriched with their p-value to csv
-rhy.nightpeaking.cluster %>% 
-  filter(adj_pVal < 0.05) %>% 
-  filter(over_under == "over") %>% 
-  select(GO, adj_pVal) %>% 
-  write.csv(., file = "./results/billu_beau_night_peaking.csv", row.names = F)
-  # view()
-#
-# plotting the enriched GOs for night-peaking clusters")
-# plot the enriched GOs
-rhy.nightpeaking.cluster %>%
-  go_enrichment_plot(clean = "no", 
-                     # function.dir = path_to_repo,
-                     fdr = 1)
+cluster.file.name.N <- paste0('./results/peaking_clusters/night_peaking_Ncbi_IDs_',sample.name,'_',period,'h.txt')
+lapply(rhy.nightpeaking.cluster, write, append=TRUE, cluster.file.name.N, ncolumns=2000)
+length(rhy.nightpeaking.cluster)
+
+# %>%
+#   go_enrichment(.,
+#                 org = "beau",
+#                 bg = expressed)
+# 
+# # view the results and save GO-terms enriched with their p-value to csv
+# rhy.nightpeaking.cluster %>% 
+#   filter(adj_pVal < 0.05) %>% 
+#   filter(over_under == "over") %>% 
+#   select(GO, adj_pVal) %>% 
+#   write.csv(., file = "./results/billu_beau_night_peaking.csv", row.names = F)
+#   # view()
+# #
+# # plotting the enriched GOs for night-peaking clusters")
+# # plot the enriched GOs
+# rhy.nightpeaking.cluster %>%
+#   go_enrichment_plot(clean = "no", 
+#                      # function.dir = path_to_repo,
+#                      fdr = 1)
 
 

@@ -45,7 +45,7 @@ src_dbi(my.db)
 library(glue)
 #
 # Choose species
-species <- 'ophio_cflo'
+species <- 'beau'
 ## End.
 
 ## z-score >> eJTK ------------------------
@@ -73,3 +73,37 @@ for (i in periods) {
   dbWriteTable(my.db, name, zscore)
 }
 
+# Rhytmic or not ----------------------------------------------------------
+# tbl(my.db, “tbl_name”) %>% collect() %>% view() for viewing table
+#
+### Write table with all the gene ID's in it and say if it is rhytmic or not
+period <- '24'
+
+# path to file with all the gene IDs
+csv.name <- paste0('./data/input/', species, '/', species, '_gene_names_robin_ncbi.csv')
+# name of the new table in the database
+name <- glue('{species}_rhytmic_genes_{period}h')
+
+# read in the gene IDs
+gene.IDs <- read.csv(csv.name, sep= ',', header = TRUE, stringsAsFactors = FALSE)
+
+#### 
+# each species needs per period a table, for instance named beu_rhytmic_genes_24h ect.
+# Tables should have 3 cols; RobinID NcbiID, rhytmic == yes/no
+#
+# So if the gene ID is present in the table from tables with *_zscores_*h, then it should have a yess and when it is not in there it should have no
+#
+rhytmic <-
+  beau %>% # what does this Beau do??
+  filter_at(vars(starts_with("Z")), any_vars(. > 1)) %>% # expression > 1 FPKM 
+  pull(gene_name) %>% # get the gene names of the expressed genes
+  unique() # check wheter there are duplicates
+
+# append this information to the beau data
+rhytmic.beau <-
+  beau %>%
+  select(gene_name) %>%
+  mutate(expressed = ifelse(gene_name %in% rhytmic,"yes","no"))
+
+# Make the table in the database
+dbWriteTable(my.db, name, )
