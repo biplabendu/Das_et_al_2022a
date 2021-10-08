@@ -41,7 +41,8 @@ ncbi.id.list <- lapply(ncbi.id.list, `[`, -1)
 
 
 # Find matching rownames from list/df and extract the attributes_robin to obtain Robin's gene ID's
-q <- matching.ids.beau[rownames(matching.ids.beau) %in% ncbi.id.df$V1, ]
+q <- matching.ids.beau[rownames(matching.ids.beau) %in% ncbi.id.list, ]
+print(q)
 p <- list(q$attributes_robin)
 
 r <- matching.ids.beau[rownames(matching.ids.beau) %in% ncbi.id.list, ]
