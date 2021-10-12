@@ -81,29 +81,43 @@ period <- '24'
 
 # path to file with all the gene IDs
 csv.name <- paste0('./data/input/', species, '/', species, '_gene_names_robin_ncbi.csv')
+
 # name of the new table in the database
-name <- glue('{species}_rhytmic_genes_{period}h')
+name <- glue('{species}_rhythmic_genes_{period}h')
 
 # read in the gene IDs
 gene.IDs <- read.csv(csv.name, sep= ',', header = TRUE, stringsAsFactors = FALSE)
 
-#### 
+# Make the table
+# For rhythmic genes
+#
 # each species needs per period a table, for instance named beu_rhytmic_genes_24h ect.
 # Tables should have 3 cols; RobinID NcbiID, rhytmic == yes/no
-#
-# So if the gene ID is present in the table from tables with *_zscores_*h, then it should have a yess and when it is not in there it should have no
-#
-rhytmic <-
-  beau %>% # what does this Beau do??
-  filter_at(vars(starts_with("Z")), any_vars(. > 1)) %>% # expression > 1 FPKM 
-  pull(gene_name) %>% # get the gene names of the expressed genes
-  unique() # check wheter there are duplicates
 
-# append this information to the beau data
-rhytmic.beau <-
-  beau %>%
-  select(gene_name) %>%
-  mutate(expressed = ifelse(gene_name %in% rhytmic,"yes","no"))
+rhytmic <- 
+  my.db %>% 
+  tbl(glue("{species}_zscores_{period}h")) %>% 
+  select(gene_ID_NCBI = ID, 
+         GammaP) %>% 
+  collect() %>% 
+  
+  # mutate(my_col_name = GammaP*2) %>% you can do cool stuff with mutate
+  
+  mutate(rhythmic = ifelse(GammaP < 0.05, "yes", "no")) %>%   
+  
+  select(-GammaP) %>%
+
+  left_join(gene.IDs, by = c('gene_ID_NCBI' = "attributes_ncbi")) %>% 
+  
+  select(-c(start,end))
+
+# group_by(rhythmic_24h) %>% 
+# 
+# summarise(n_genes = n())
+#### 
+#
 
 # Make the table in the database
-dbWriteTable(my.db, name, )
+dbWriteTable(my.db, name, rhytmic)
+
+##### Done.
