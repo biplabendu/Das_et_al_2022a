@@ -561,3 +561,35 @@ HOW TO READ THE FIGURE?
 
 Next, we can try to identify the ant gene-clusters that underlie behavioral plasticity, as well as the ant clusters that are affected during behavioral manipulation induced by *Ophiocordyceps*.
 
+
+```{r export_module_info, eval=F}
+
+for(i in 1:length(module_genes)){
+  
+  if(i == 1){
+    
+    foo <- data.frame(gene_name = module_genes[[i]],
+                      module_identity = names(module_genes)[i])
+    
+  }
+  
+  else {
+    
+    bar <- data.frame(gene_name = module_genes[[i]],
+                      module_identity = names(module_genes)[i])
+    
+    foo <- rbind(foo,bar)
+    
+  }
+  
+  
+}
+
+foo %>% 
+  mutate(GCN = "beau") %>% 
+  write.csv(paste0(path_to_repo,"/results/networks/", sample.name,"_genes_and_module_identity.csv"),
+            row.names = F)
+
+
+```
+
