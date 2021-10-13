@@ -389,7 +389,7 @@ gplots::heatmap.2(t(adj_matrix_ME),
 pacman::p_load(igraph)
 
 # get rid of low correlations (0.6 & 0.8 are arbitrary) [0.7 and 0.9]
-# adj_matrix_ME[adj_matrix_ME < 0.6] <- 0
+adj_matrix_ME[adj_matrix_ME < 0.5] <- 0
 # adj_matrix_ME[adj_matrix_ME < 0.8 & adj_matrix_ME>0] <- 0.5
 # adj_matrix_ME[adj_matrix_ME >= 0.8] <- 1
 
