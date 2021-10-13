@@ -40,7 +40,7 @@ conflict_prefer("layout", "plotly")
 conflict_prefer("hclust", "flashClust")
 
 #' set path to your working directory
-path_to_repo = "./Das_et_al_2022a"
+path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a"
 
 #' load functions
 # customized theme for publication quality figures
@@ -55,19 +55,20 @@ source(paste0(path_to_repo,"/functions/plot_zscores.R"))
 
 ## Overview/Goals
 
-Using time-course RNASeq data from healthy Cflo forager heads: 
+Using time-course RNASeq data from Ophiocordyceps camponoti-floridani liquid culture: 
 
 - build a circadian gene co-expression network (GCN), 
 - annotate the network using published data,
+- find rhytmic gene modules
 
 ## Step 1: Build circadian GCN
 
 ### 1.1 Load data
 
-Dataset: Healthy (uninfected, uninjected) Cflo forager ant heads (three pooled per time point for RNA-extraction and -sequencing), collected every 2h, over a 24h-period. [Control]
+Dataset: O. camponoti-floridani grown in liquid culture as blastspore (three pooled per time point for RNA-extraction and -sequencing), collected every 2h, over a 24h-period. [Control]
 
 ```{r load_data}
-# loading database which contains data for Das and de Bekker 2021 (bioRxiv)
+# loading database which contains data for Das and de Bekker 2022, from GitHub
 db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_data.db"))
 
 # specify sample name
@@ -87,11 +88,11 @@ dim(dat[-1])
 
 ### 1.2 Clean data
 
-The above dataset contains all genes (n=13,808) in the ant genome. 
-However, not all of these genes are expressed in the ant head, and some are expressed at very low levels that are not biologically meaningful. Therefore, we will only keep the genes that are "expressed" (≥1 FPKM for at least half of all time points) in the ant head.
+The above dataset contains all genes ??(n=13,808)?? (7455 genes, 12 samples) in the fungi genome. 
+However, not all of these genes are expressed, and some are expressed at very low levels that are not biologically meaningful. Therefore, we will only keep the genes that are "expressed" (≥1 FPKM for at least half of all time points).
 
 ```{r clean_data}
-# Which genes are expressed throughout the day in forager heads?
+# Which genes are expressed throughout the day in Ophio-cflo?
   # count the number of time points that has ≥ 1 FPKM
   n.expressed <- apply(dat[-1], 1, function(x) sum(x >= 1))
   # subset the data and only keep the filtered genes
@@ -102,7 +103,7 @@ dim(dat)
 
 ```
 
-This is our cleaned, input data file for building the circadian GCN. 
+This is our cleaned, input data file for building the circadian GCN. This contains 6874 genes in ??13?? samples.
 
 
 ### 1.3 Format data
@@ -148,8 +149,8 @@ ggplot(x, aes(x=value, color=sample)) + geom_density() + theme_Publication()
 ```{r gene_sim_matrix}
 # Calculate Kendall's tau-b correlation for each gene-gene pair
 
-sim_matrix <- cor((datExpr), method = "kendall") # this step takes time
-save(sim_matrix, file = paste0(path_to_repo, "/results/temp_files/sim_matrix_", sample.name, "_TC6.RData")) # might be useful to save the sim_matrix and
+# sim_matrix <- cor((datExpr), method = "kendall") # this step takes time
+# save(sim_matrix, file = paste0(path_to_repo, "/results/temp_files/sim_matrix_", sample.name, "_TC6.RData")) # might be useful to save the sim_matrix and
 load(paste0(path_to_repo, "/results/temp_files/sim_matrix_", sample.name, "_TC6.RData")) # load it up
 
 ## Let's display a chunk of the matrix (code from Hughitt 2016; github)
@@ -198,21 +199,20 @@ text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
 
 ```
 
-NOTE: The scale-free topology fit index reaches ~0.85 at a soft-thresholding-power=12, and it does not improve drastically beyond that.
+NOTE: The scale-free topology fit index reaches ~0.846 at a soft-thresholding-power=8, and it gets saturated after that. R2 is used to quentify how well a scale-free netork satisfies, ranging from 0 (non-scale free topology) to 1 (scale free topology). Networks in a biological contest do resemble scale-free topology. When we maximize for scale-free model fit, there is a natural trade-off between mean number of connections. We want to pick a soft thresshold that satifies the scale-free network while maintaning the highest connectivity.
 
 Now, we can go ahead and create our adjacency matrix by power-transforming the similarity matrix (see WGCNA for more info).
 
 ```{r adjacency_matrix}
-## Specify the soft-thresholding-power
-soft.power = 12
+## Specify the soft-thresholding-power which has been set at 8 for Ophio-cflo
+soft.power = 8
 
-# # Construct adjacency matrix
+# Construct adjacency matrix
 # adj_matrix <- adjacency.fromSimilarity(sim_matrix,
 #                                        power=soft.power,
-#                                        type='signed'
-#                                         )
-# save(adj_matrix, file = paste0(path_to_repo, "/results/temp_files/adj_matrix_", sample.name, "_TC7.RData")) # might be useful to save the sim_matrix and
-load(paste0(path_to_repo, "/results/temp_files/adj_matrix_", sample.name, "_TC6.RData")) # load it up
+#                                        type='signed')
+# save(adj_matrix, file = paste0(path_to_repo, "/results/temp_files/adj_matrix_", sample.name, "_TC6.RData")) # might be useful to save the sim_matrix and
+load(paste0(path_to_repo,"/results/temp_files/adj_matrix_", sample.name,"_TC6.RData")) # load it up
 
 
 # Convert adj_matrix to matrix
@@ -247,10 +247,10 @@ The following steps are performed as per guidelines from the WGCNA package and s
 ### 2.1 Create topological overalp matrix
 
 ```{r adj_to_TOM}
-# # Turn adjacency into topological overlap
+# Turn adjacency into topological overlap
 # TOM = TOMsimilarity(adj_matrix);
 # dissTOM = 1-TOM
-# save(dissTOM, file = paste0(path_to_repo, "/results/temp_files/dissTOM_", sample.name, "_TC7.RData")) # might be useful to save the sim_matrix and
+# save(dissTOM, file = paste0(path_to_repo, "/results/temp_files/dissTOM_", sample.name, "_TC6.RData")) # might be useful to save the sim_matrix and
 load(paste0(path_to_repo, "/results/temp_files/dissTOM_", sample.name, "_TC6.RData")) # load it up
 
 # Call the hierarchical clustering function
@@ -283,7 +283,7 @@ dynamicMods= cutreeDynamic(dendro = geneTree,
                            minClusterSize = minModuleSize);
 
 # view number of genes in each module
-# table(dynamicMods)
+table(dynamicMods)
 
 writeLines("How many genes are there in each of the initial modules (clusters) detected?
 Note: The names of the modules (colors) have no meaning.")
@@ -316,8 +316,8 @@ METree = hclust(as.dist(MEDiss), method = "average");
 plot(METree, main = "Clustering of module eigengenes",
      xlab = "", sub = "MEDiss = 1-cor(MEs, method = 'kendall')")
 
-# We choose a height cut of 0.4, corresponding to correlation of 0.6, to merge
-MEDissThres = 0.4 # user-specified parameter value; see WGCNA manual for more info
+# We choose a height cut of 0.3
+MEDissThres = 0.3 # user-specified parameter value; see WGCNA manual for more info
 
 # Plot the cut line into the dendrogram
 abline(h=MEDissThres, col = "red")
@@ -454,7 +454,7 @@ plot(network,
 ```{r define_genes_of_interest}
 
 # load ejtk database
-ejtk.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_ejtk.db"))
+ejtk.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_ejtk.db"))
 
 # DEFINE GENES OF INTEREST
 
@@ -563,7 +563,7 @@ Next, we can try to identify the ant gene-clusters that underlie behavioral plas
 
 
 
-```{r find_genes_in_network_2}
+```{r find_genes_in_network_2, eval=F}
 # Specify the path to TC5 repo
 path_to_tc5_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2021"
 # Load the TC5 database
@@ -624,7 +624,7 @@ writeLines("Visualizing the significant overlaps between the identified modules 
 - ophio-DOWN: sig. lower expressed in Ophio-infected forager heads during manipulated biting as compared to healthy foragers")
 ```
 
-```{r plot_gom_1v3, echo = FALSE, out.width='65%', fig.show='hold', fig.align='center', fig.cap='Gene-clusters underlying behavioral plasiticity and parasitic behavioral manipulation'}
+```{r plot_gom_1v3, echo = FALSE, out.width='65%', fig.show='hold', fig.align='center', fig.cap='Gene-clusters underlying behavioral plasiticity and parasitic behavioral manipulation', eval=F}
 # knitr::include_graphics(c(paste0(path_to_repo, "/results/figures/", sample.name,"_gom_1v2.png"),
 #                           paste0(path_to_repo, "/results/figures/", sample.name,"_gom_1v3.png")))
 knitr::include_graphics(paste0(path_to_repo, "/results/figures/", sample.name,"_gom_1v3.png"))
@@ -645,7 +645,7 @@ The figure above indicates that the gene-clusters that underlie behavioral plast
   - are sig. higher expressed in foragers (v. nurses) and 
   - are sig. up-regulated in forager heads during behavioral manipulation (v. uninfected foragers)
 
-```{r explore_ivory_part1}
+```{r explore_ivory_part1, eval=FALSE}
 
 # specify our cluster of interest (coi)
 coi.1 <- "ivory"
@@ -681,7 +681,7 @@ DT::datatable(overlapping.genes.1.annot, options = list(
 
 Which genes in darkturquoise show overlap with both genes of interests?
 
-```{r explore_ivory_part2}
+```{r explore_ivory_part2, eval=F}
 
 # define the second gene-set of interst
 goi.2 <- for.up
@@ -722,7 +722,7 @@ Now that we know that the module **ivory** contains most of our genes of interes
 
 First up, let's see which processes are overrepresented in the cluster.
 
-```{r explore_ivory_v3}
+```{r explore_ivory_v3, eval=F}
 
 # To run a functional enrichment analyis, we first need to define the set of background genes; for our purpose, we will use the 9139 genes that we used to build our circadian GCN
 bg.genes <- dat %>% pull(gene_name)
@@ -746,7 +746,7 @@ Need to:
 
 - [note for self] update the stacked.zplot() function to show data for TC7 (not TC5)
 
-```{r explore_ivory_v4}
+```{r explore_ivory_v4, eval=F}
 
 # # Obtain the stacked z-plots for nurses (blue) and foragers (red)
 # zplots.ivory <- 
@@ -772,7 +772,7 @@ Need to:
 
 #### 4.2.1 Overlapping genes
 
-```{r explore_antiquewhite4_v1, echo=F}
+```{r explore_antiquewhite4_v1, echo=F, eval=F}
 # # specify our cluster of interest (coi)
 # coi.2 <- "antiquewhite4"
 # 
@@ -808,7 +808,7 @@ Need to:
 
 #### 4.2.2 Enriched GO terms
 
-```{r explore_darkred_v2, echo=F}
+```{r explore_darkred_v2, echo=F, eval=F}
 # 
 # # which genes?
 # module_genes[[coi.2]] %>% 
@@ -826,7 +826,7 @@ Need to:
 
 #### 4.2.3 Daily rhythms?
 
-```{r explore_darkred_v3, echo=F}
+```{r explore_darkred_v3, echo=F, eval=F}
 
 # # Obtain the stacked z-plots for 
 # # nurses (blue) and foragers (red)
@@ -842,5 +842,5 @@ Need to:
 
 #### 4.3.4 HUB genes?
 
-more coming soon...
+#more coming soon...
 
