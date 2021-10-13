@@ -1,6 +1,6 @@
 ---
-title: "Cflo-healthy-controls (TC7)"
-author: Biplabendu Das
+title: "ophiocordyceps camponoti-floridani time-course (TC6)"
+author: Biplabendu Das 
 date: '`r format(Sys.time(), "%d %B, %Y")`'
 output:
   html_document:
@@ -40,7 +40,7 @@ conflict_prefer("layout", "plotly")
 conflict_prefer("hclust", "flashClust")
 
 #' set path to your working directory
-path_to_repo = "./Das_et_al_2022b"
+path_to_repo = "./Das_et_al_2022a"
 
 #' load functions
 # customized theme for publication quality figures
@@ -68,10 +68,10 @@ Dataset: Healthy (uninfected, uninjected) Cflo forager ant heads (three pooled p
 
 ```{r load_data}
 # loading database which contains data for Das and de Bekker 2021 (bioRxiv)
-db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC7_data.db"))
+db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_data.db"))
 
 # specify sample name
-sample.name <- "beau"
+sample.name <- "ophio_cflo"
 
 # extract the (gene-expr X time-point) data
 dat <-
@@ -149,8 +149,8 @@ ggplot(x, aes(x=value, color=sample)) + geom_density() + theme_Publication()
 # Calculate Kendall's tau-b correlation for each gene-gene pair
 
 sim_matrix <- cor((datExpr), method = "kendall") # this step takes time
-save(sim_matrix, file = paste0(path_to_repo, "/results/temp_files/sim_matrix_", sample.name, "_TC7.RData")) # might be useful to save the sim_matrix and
-load(paste0(path_to_repo, "/results/temp_files/sim_matrix_", sample.name, "_TC7.RData")) # load it up
+save(sim_matrix, file = paste0(path_to_repo, "/results/temp_files/sim_matrix_", sample.name, "_TC6.RData")) # might be useful to save the sim_matrix and
+load(paste0(path_to_repo, "/results/temp_files/sim_matrix_", sample.name, "_TC6.RData")) # load it up
 
 ## Let's display a chunk of the matrix (code from Hughitt 2016; github)
 heatmap_indices <- sample(nrow(sim_matrix), 200)
@@ -212,7 +212,7 @@ soft.power = 12
 #                                        type='signed'
 #                                         )
 # save(adj_matrix, file = paste0(path_to_repo, "/results/temp_files/adj_matrix_", sample.name, "_TC7.RData")) # might be useful to save the sim_matrix and
-load(paste0(path_to_repo, "/results/temp_files/adj_matrix_", sample.name, "_TC7.RData")) # load it up
+load(paste0(path_to_repo, "/results/temp_files/adj_matrix_", sample.name, "_TC6.RData")) # load it up
 
 
 # Convert adj_matrix to matrix
@@ -251,7 +251,7 @@ The following steps are performed as per guidelines from the WGCNA package and s
 # TOM = TOMsimilarity(adj_matrix);
 # dissTOM = 1-TOM
 # save(dissTOM, file = paste0(path_to_repo, "/results/temp_files/dissTOM_", sample.name, "_TC7.RData")) # might be useful to save the sim_matrix and
-load(paste0(path_to_repo, "/results/temp_files/dissTOM_", sample.name, "_TC7.RData")) # load it up
+load(paste0(path_to_repo, "/results/temp_files/dissTOM_", sample.name, "_TC6.RData")) # load it up
 
 # Call the hierarchical clustering function
 geneTree = hclust(as.dist(dissTOM), method = "average")
@@ -454,7 +454,7 @@ plot(network,
 ```{r define_genes_of_interest}
 
 # load ejtk database
-ejtk.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC7_ejtk.db"))
+ejtk.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_ejtk.db"))
 
 # DEFINE GENES OF INTEREST
 
@@ -557,6 +557,11 @@ HOW TO READ THE FIGURE?
 - Darker the green, more significant is the overlap (also indicated by the adj_pval)
 
 Next, we can try to identify the ant gene-clusters that underlie behavioral plasticity, as well as the ant clusters that are affected during behavioral manipulation induced by *Ophiocordyceps*.
+
+
+########## Till Here....
+
+
 
 ```{r find_genes_in_network_2}
 # Specify the path to TC5 repo
