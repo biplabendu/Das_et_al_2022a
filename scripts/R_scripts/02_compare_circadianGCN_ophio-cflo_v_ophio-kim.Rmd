@@ -1,0 +1,77 @@
+---
+title: "Compare GCNs: ophio-cflo v ophio-kim (TC6)"
+author: Biplabendu Das
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: united
+    keep_md: no
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = F)
+knitr::opts_chunk$set(message = F)
+
+## For more inspiration on customizing the html output, refer to the following:
+# https://bookdown.org/yihui/rmarkdown/html-document.html#table-of-contents
+
+```
+
+```{r housekeeping, include=FALSE}
+set.seed(420)
+rm(list = ls())
+
+#' Load the libraries
+pacman::p_load(pheatmap, dendextend, tidyverse, viridis)
+pacman::p_load(RSQLite, tidyverse, dbplyr, DT, conflicted, WGCNA, igraph)
+pacman::p_load(patchwork)
+
+#' set conflict preference
+conflict_prefer("select", "dplyr")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("layout", "plotly")
+conflict_prefer("hclust", "flashClust")
+
+#' set path to your working directory
+path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a"
+
+# script name
+script.name = "02_compare_circadianGCN_ophio-cflo_v_ophio-kim"
+
+#' load functions
+# customized theme for publication quality figures
+source(paste0(path_to_repo,"/functions/theme_publication.R"))
+# function to perform enrichment analysis
+source(paste0(path_to_repo,"/functions/enrichment_analysis.R"))
+# function to plot z-scores (Cflo genes only)
+source(paste0(path_to_repo,"/functions/plot_zscores.R"))
+
+```
+
+## Overview/Goals
+
+Compare the gene co-expression networks of Ophiocordyceps camponoti-floridani (Ocflo) and Ophiocordyceps kimflemingae (Okim) to:
+
+- identify the modules that are highly conserved
+- identify the modules that show no evidence for preservation
+
+## Step 1: Identify the homologous genes
+
+### 1.1 Load data
+
+Dataset: Annotation file for Ocflo; contains the Okim homologs for Ocflo genes identified using blast.
+
+```{r load_data}
+cflo.annot
+
+```
+
+### 1.2 Clean data
+
