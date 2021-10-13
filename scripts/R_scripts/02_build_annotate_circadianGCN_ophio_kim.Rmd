@@ -1,5 +1,5 @@
 ---
-title: "ophiocordyceps camponoti-floridani time-course (TC6)"
+title: "Ophiocordyceps kimflemingae time-course (TC6)"
 author: Biplabendu Das 
 date: '`r format(Sys.time(), "%d %B, %Y")`'
 output:
@@ -72,7 +72,7 @@ Dataset: O. camponoti-floridani grown in liquid culture as blastspore (three poo
 db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_data.db"))
 
 # specify sample name
-sample.name <- "ophio_cflo"
+sample.name <- "ophio_kim_LD"
 
 # extract the (gene-expr X time-point) data
 dat <-
@@ -462,13 +462,13 @@ rhy.24 <-
   tbl(ejtk.db, paste0(sample.name,"_zscores_24h")) %>% 
     filter(GammaP < 0.05) %>% pull(ID)
 
-rhy.12 <-
-  tbl(ejtk.db, paste0(sample.name,"_zscores_12h")) %>% 
-    filter(GammaP < 0.05) %>% pull(ID)
+# rhy.12 <-
+#   tbl(ejtk.db, paste0(sample.name,"_zscores_12h")) %>% 
+#     filter(GammaP < 0.05) %>% pull(ID)
 
-rhy.08 <- 
-  tbl(ejtk.db, paste0(sample.name,"_zscores_08h")) %>% 
-    filter(GammaP < 0.05) %>% pull(ID)
+# rhy.08 <- 
+#   tbl(ejtk.db, paste0(sample.name,"_zscores_08h")) %>% 
+#     filter(GammaP < 0.05) %>% pull(ID)
 
 
 # DRGs
@@ -552,8 +552,6 @@ The above plot identifies the gene-clusters that contain most of the genes that 
 
 HOW TO READ THE FIGURE?
 
-- Briefly explain here
-- Talk about Odds-Ratio
 - Darker the green, more significant is the overlap (also indicated by the adj_pval)
 
 Next, we can try to identify the ant gene-clusters that underlie behavioral plasticity, as well as the ant clusters that are affected during behavioral manipulation induced by *Ophiocordyceps*.
