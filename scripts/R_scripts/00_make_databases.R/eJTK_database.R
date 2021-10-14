@@ -94,7 +94,7 @@ gene.IDs <- read.csv(csv.name, sep= ',', header = TRUE, stringsAsFactors = FALSE
 # each species needs per period a table, for instance named beu_rhytmic_genes_24h ect.
 # Tables should have 3 cols; RobinID NcbiID, rhytmic == yes/no
 
-rhytmic <- 
+rhythmic <- 
   my.db %>% 
   tbl(glue("{species}_zscores_{period}h")) %>% 
   select(gene_ID_NCBI = ID, 
@@ -118,6 +118,6 @@ rhytmic <-
 #
 
 # Make the table in the database
-dbWriteTable(my.db, name, rhytmic)
+dbWriteTable(my.db, name, rhythmic)
 
 ##### Done.
