@@ -1,27 +1,33 @@
 #### Convert Gene ID ----------------------------------
 # his function is made to convert the gene names of NCBI to the gene names of Robin.
 
-covert_id <- function(kind, id.list) {
-  if (kind == ncbi) {
-    ## code to covert ncbi to robin names
-    return(robin.id.list)
-  }
-  else if (kind == robin) {
-    ## code to convert robin to ncbi
-    return(ncbi.id.list)
-  }
-  else {
-    print("This function can only convert NCBI gene ID's to Robin's gene ID's and vice versa. Please specify which kind you want to concert 'ncbi' or 'robin'. ")
-  }
-  
-}
+### This part of the code will be the end function, but for now the code below this chunck is used to convert the gene ID's
+#
+# covert_id <- function(kind, id.list) {
+#   if (kind == ncbi) {
+#     ## code to covert ncbi to robin names
+#     return(robin.id.list)
+#   }
+#   else if (kind == robin) {
+#     ## code to convert robin to ncbi
+#     return(ncbi.id.list)
+#   }
+#   else {
+#     print("This function can only convert NCBI gene ID's to Robin's gene ID's and vice versa. Please specify which kind you want to concert 'ncbi' or 'robin'. ")
+#   }
+#  
+# }
+#
+# covert_id_ncbi_to_robin_beau <- function(ncbi.id.list) {
+#   ## code to convert ncbi gene ID's to Robins gene ID's 
+#   robin.id.list <- ## something
+#   return(robin.id.list)
+# }
+#
+### Chunck Ends
 
-covert_id_ncbi_to_robin_beau <- function(ncbi.id.list) {
-  ## code to convert ncbi gene ID's to Robins gene ID's 
-  robin.id.list <- ## something
-  return(robin.id.list)
-}
-
+### Code to convert gene ID's
+#
 # Read in the data
 matching.ids.beau <- read.csv("./data/input/beau/beau_gene_names_robin_ncbi.csv", sep = ',', header = TRUE, row.names = 4)
 ncbi.id.df <- read.delim('./results/beau_not_expressed_list.txt', sep = ' ', header = FALSE)
