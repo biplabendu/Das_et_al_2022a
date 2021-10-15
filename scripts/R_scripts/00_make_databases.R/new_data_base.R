@@ -1,6 +1,8 @@
 ########## TC6 Fungal Database ############
 #
-# This script is written to create a databse containing all the data of a 24h time-course experiment
+# This script is written to create a databse containing all the data of a obtained during Time Course experiment 6
+# This database can constantly be updated to add more columns to the excisting tables
+# The end goal is to have one big table per species, which contains all the data, that can be easily written to a cvs and used for sharing
 #
 # Housekeeping ---------------------------------------------------------------
 #
