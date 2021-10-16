@@ -14,3 +14,5 @@ results/temp_files/sim_matrix_ophio_cflo_TC6.RData
 results/temp_files/adj_matrix_ophio_kim_TC6.RData
 results/temp_files/dissTOM_ophio_kim_TC6.RData
 results/temp_files/sim_matrix_ophio_kim_TC6.RData
+scripts/python_scripts/.ipynb_checkpoints/plot_expression_data-checkpoint.ipynb
+scripts/python_scripts/plot_expression_data.ipynb
