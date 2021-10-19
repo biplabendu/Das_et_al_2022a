@@ -42,9 +42,9 @@ bbduk.sh \
 	tbo	
 
 # Parameter explanation:
-	#"gtrim=10" will quality trim at Q10 using Phred algorithm, "qtrim=rl" will trim right and left sides
+	# "gtrim=10" will quality trim at Q10 using Phred algorithm, "qtrim=rl" will trim right and left sides
 	# "ref=truseq.fq.gz" included Illumina truseq adapters within BBMap package
-	# "hdist=1" allows one mismatch, "k=25" is k-mer size of 25, "mink=11" allow shorter k-mers of 11 at end of read
+	# "hdist=1" allows one mismatch, "k=23" is k-mer size of 23, "mink=11" allow shorter k-mers of 11 at end of read
 	# default looks at reverse-complement and forward seuence of refseq otherwise "rcomp=<t/r>"
 	# "-Xmx1g" flag tells BBDuk to use 1GB of RAM
 	# "tbo" (trim adapters based on pair overlap detection) and "tpe" (both reads to the same length) flags for normal paired-end fragment libraries
