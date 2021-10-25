@@ -22,7 +22,8 @@ conflict_prefer("layout", "plotly")
 path <- "/Users/roos_brouns/Dropbox/Ant-fungus/02_scripts/Git_Das_folder2/Das_et_al_2022a"
 #
 # Specify species
-species <- 'beau'
+species <- 'ophio_cflo'
+
 
 
 # 1. FPKM table  ----------------------------------------------------------
@@ -73,7 +74,6 @@ periods <- c('08',12,24) %>%
   as.character
 
 for (i in periods) {
-  
   # name the file with the species and period
   name <- glue('{species}_zscores_{i}h')
   # get the CSV name
@@ -92,11 +92,11 @@ for (i in periods) {
     select(gene_ID_ncbi = ID, 
            GammaP) %>%
     collect %>%
-    mutate(rhythmic = ifelse(GammaP < 0.05, "yes", "no")) %>%
-    select(-GammaP) 
+    mutate(rhythmic = ifelse(GammaP < 0.05, "yes", "no"))
 
   # Rename the cols
-  colnames(rhythmic)[2] <- glue('rhythmic_{i}h')
+  colnames(rhythmic)[2] <- glue('GammaP_{i}h')
+  colnames(rhythmic)[3] <- glue('rhythmic_{i}h')
   
   # Join with data df
   data <- left_join(data, rhythmic, by = 'gene_ID_ncbi')
@@ -163,6 +163,14 @@ annots <- read.csv(glue('{path}/data/input/{species}/{species}_annots_robin_ncbi
   print("We do not have data for this species")
 }
 
+annots <- read.csv(glue('{path}/data/input/{species}/{species}_annots_robin_ncbi.csv'))  %>%
+  select(-c(gene_ID_robin, Start, End)) %>%
+  mutate_all(list(~na_if(.,""))) %>%
+  mutate(signalP = ifelse(is.na(annots$signalP), 'no', 'yes')) %>%
+  mutate(SSP = ifelse(is.na(annots$SSP), 'no', 'yes')) %>%
+  mutate(TMHMM = ifelse (!is.na(annots$TMHMM), 'yes', 'no'))
+
+
 data <- left_join(data, annots, by = 'gene_ID_ncbi')
 
 # Othologs ----------------------------------------------
@@ -170,8 +178,8 @@ data <- left_join(data, annots, by = 'gene_ID_ncbi')
 if (species == 'ophio_cflo'){
   ## Ophio_cflo
   orthos <- read.csv(glue('{path}/data/input/{species}/{species}_annots_robin_ncbi.csv')) %>%
-    select(c(gene_ID_ncbi, ophio_kim_homolog = sc16a_homolog)) %>%
-} if else (species == 'beau')
+    select(c(gene_ID_ncbi, ophio_kim_homolog = sc16a_homolog))
+} if else (species == 'beau') {
   ## Beau
   print ('No ortholog available for Beau')
 } else {
