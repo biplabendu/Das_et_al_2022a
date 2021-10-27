@@ -22,7 +22,7 @@ conflict_prefer("layout", "plotly")
 path <- "/Users/roos_brouns/Dropbox/Ant-fungus/02_scripts/Git_Das_folder2/Das_et_al_2022a"
 #
 # Specify species
-species <- 'ophio_cflo'
+species <- 'beau'
 
 
 
@@ -148,17 +148,17 @@ if (species == 'ophio_cflo') {
 ## Ophio_cflo
 annots <- read.csv(glue('{path}/data/input/{species}/{species}_annots_robin_ncbi.csv')) %>%
   select(-c(arb2_gene, sc16a_homolog)) %>%
-  mutate(signalP = ifelse(!is.na(annots$signalP), 'yes', 'no')) %>%
-  mutate(SSP = ifelse(!is.na(annots$SSP), 'yes', 'no')) %>%
-  mutate(TMHMM = ifelse (!is.na(annots$TMHMM), 'yes', 'no'))
+  mutate(signalP = ifelse(!is.na(signalP), 'yes', 'no')) %>% 
+  mutate(SSP = ifelse(!is.na(SSP), 'yes', 'no')) %>%
+  mutate(TMHMM = ifelse (!is.na(TMHMM), 'yes', 'no'))
 } else if (species == 'beau') {
 ## Beau
 annots <- read.csv(glue('{path}/data/input/{species}/{species}_annots_robin_ncbi.csv')) %>%
   select(-c(gene_ID_robin, Start, End)) %>%
   mutate_all(list(~na_if(.,""))) %>%
-  mutate(signalP = ifelse(!is.na(annots$signalP), 'yes', 'no')) %>%
-  mutate(SSP = ifelse(!is.na(annots$SSP), 'yes', 'no')) %>%
-  mutate(TMHMM = ifelse (!is.na(annots$TMHMM), 'yes', 'no'))
+  mutate(signalP = ifelse(!is.na(signalP), 'yes', 'no')) %>%
+  mutate(SSP = ifelse(!is.na(SSP), 'yes', 'no')) %>%
+  mutate(TMHMM = ifelse (!is.na(TMHMM), 'yes', 'no'))
 } else {
   print("We do not have data for this species")
 }
@@ -179,7 +179,7 @@ if (species == 'ophio_cflo'){
   ## Ophio_cflo
   orthos <- read.csv(glue('{path}/data/input/{species}/{species}_annots_robin_ncbi.csv')) %>%
     select(c(gene_ID_ncbi, ophio_kim_homolog = sc16a_homolog))
-} if else (species == 'beau') {
+} else if  (species == 'beau') {
   ## Beau
   print ('No ortholog available for Beau')
 } else {
