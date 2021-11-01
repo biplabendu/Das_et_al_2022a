@@ -17,3 +17,5 @@ c.tab <- data.frame(c1 = c(x1,x2),
                     c2 = c(x3,x4))
 c.tab
 fisher.test(c.tab)
+
+

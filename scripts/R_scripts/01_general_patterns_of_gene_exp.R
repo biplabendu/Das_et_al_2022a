@@ -52,7 +52,7 @@ src_dbi(data.db)
 # 01. General patterns of gene expression ---------------------------------
 #
 # specify sample for analysis
-sample.name <- 'beau'
+sample.name <- 'ophio_kim_LD'
 #
 # number of all genes
 all.genes <- tbl(data.db, paste0(sample.name ,"_fpkm")) %>%  

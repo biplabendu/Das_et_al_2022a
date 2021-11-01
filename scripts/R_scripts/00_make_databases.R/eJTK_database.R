@@ -17,6 +17,9 @@ conflict_prefer("layout", "plotly")
 # gamma-pvalue threshold for inferring rhythmicity
 gamma.pval = 0.05
 #
+# path to repo
+path = "/Users/roos_brouns/Dropbox/Ant-fungus/02_scripts/Git_Das_folder2/Das_et_al_2022a"
+
 ## Path to save files ------
 # for supplementary files
 # supp.path="~/University\ of\ Central\ Florida/Charissa\ De\ Bekker\ -\ Ant-Fungus-Clock-Interactions/04_manuscript/03_supplementary_files/"
@@ -34,7 +37,7 @@ gamma.pval = 0.05
 # d. ophio_kim_LD_zscores_24h
 # e. ophio_kim_DD_zscores_24h
 #
-# Load the data
+# Load the data %
 my.db <- dbConnect(RSQLite::SQLite(),
                    "./data/databases/TC6_fungal_ejtk.db")
 # which tables are in the database
@@ -120,4 +123,22 @@ rhythmic <-
 # Make the table in the database
 dbWriteTable(my.db, name, rhythmic)
 
+##### Rhytmicity for ophio_kim ----------------------
+
+gene.ID <- read_csv(glue('{path}/data/input/ophio_kim/ophio_kim_annots_robin_ncbi.csv')) %>% 
+  select(gene_ID_robin, gene_ID_ncbi)
+
+rhythmic <- 
+  my.db %>% 
+  tbl('ophio_kim_LD_zscores_24h') %>% 
+  select(gene_ID_ncbi = ID, 
+         GammaP) %>% 
+  collect() %>% 
+  mutate(rhythmic = ifelse(GammaP < 0.05, "yes", "no")) %>% 
+  left_join(gene.ID, by = 'gene_ID_ncbi')
+
+dbWriteTable(my.db, 'ophio_kim_LD_rhythmic_genes_24h', rhythmic)
+
 ##### Done.
+
+
