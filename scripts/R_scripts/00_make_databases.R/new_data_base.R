@@ -30,6 +30,7 @@ species <- 'ophio_cflo'
 # 0. Create the database / connect to the database ----------------------------------
 my.db <- dbConnect(RSQLite::SQLite(),
                    glue("{path}/data/databases/new_TC6_fungal_data.db"))
+src_dbi(my.db)
 
 
 # 1. FPKM table  ----------------------------------------------------------
