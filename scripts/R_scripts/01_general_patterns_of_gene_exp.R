@@ -162,7 +162,7 @@ my_hclust_gene <- hclust(dist(zscore.rhy), method = "complete")
 
 
 # Make annotations for the heatmaps
-my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 2) # k=  clusters
+my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 4) # k=  clusters
 my_gene_col <- data.frame(cluster = my_gene_col)
 
 
@@ -186,7 +186,7 @@ rhy.heat <-
   pheatmap(zscore.rhy, show_rownames = F, show_colnames = F,
                          annotation_row = my_gene_col, 
                          annotation_col = my_sample_col,
-                         cutree_rows = 2, # OG was 4
+                         cutree_rows = 1, # OG was 4
                          cutree_cols = 2,
                          annotation_colors = my_colour,
                          border_color=FALSE,
@@ -226,45 +226,41 @@ rhy.heat <-
 # from eye-balling the heatmap from above
   # day-peaking cluster: cluster-3
   # night-peaking cluster: cluster-1
+# 
+# ## day-peaking | cluster 3 ##
+# rhy.daypeaking.cluster <-
+#   my_gene_col %>%
+#   rownames_to_column(var = "gene") %>%
+#   filter(cluster %in% c(2,4)) %>% # %in% c=(1,2) for filter in 2, == for one # NAME here the cluster
+#   pull(gene) #%>%
 
-## day-peaking | cluster 3 ##
-rhy.daypeaking.cluster <-
-  my_gene_col %>%
-  rownames_to_column(var = "gene") %>%
-  filter(cluster == 1) %>% # NAME here the cluster
-  pull(gene) #%>%
+# # save day peaking cluster to a file
+# cluster.file.name.D <- paste0('./results/temp_files/',sample.name,'_',period,'h.txt')
+# lapply(rhy.daypeaking.cluster, write, cluster.file.name.D, append=TRUE, ncolumns=1000)
+# length(rhy.daypeaking.cluster)
 
-# save day peaking cluster to a file
-cluster.file.name.D <- paste0('./results/peaking_clusters/dusk_peaking_Ncbi_IDs_',sample.name,'_',period,'h.txt')
-lapply(rhy.daypeaking.cluster, write, cluster.file.name.D, append=TRUE, ncolumns=1000)
-length(rhy.daypeaking.cluster)
-
-# run enrichment analysis
-  go_enrichment(.,
-                org = sample.name,
-                bg = expressed) # enrichment against all expressed ophio_cflo genes
-# view the results
-rhy.daypeaking.cluster %>% view()
-
-# Plotting the enriched GOs for day-peaking clusters
-rhy.daypeaking.cluster %>%
-  go_enrichment_plot(clean = "no",
-                     # function.dir = path_to_repo,
-                     fdr = 5)
+# # run enrichment analysis
+#   go_enrichment(rhy.daypeaking.cluster,
+#                 org = sample.name,
+#                 bg = expressed) # enrichment against all expressed ophio_cflo genes
 # # view the results
-# rhy.24.daypeaking.cluster.3.4 %>% head() %>% view()
-
-
-## night-peaking | cluster 1 ##
-rhy.nightpeaking.cluster <-
-  my_gene_col %>%
-  rownames_to_column(var = "gene") %>%
-  filter(cluster == 1) %>%
-  pull(gene) 
-
-cluster.file.name.N <- paste0('./results/peaking_clusters/night_peaking_Ncbi_IDs_',sample.name,'_',period,'h.txt')
-lapply(rhy.nightpeaking.cluster, write, append=TRUE, cluster.file.name.N, ncolumns=2000)
-length(rhy.nightpeaking.cluster)
+# rhy.daypeaking.cluster %>% view()
+# 
+# # Plotting the enriched GOs for day-peaking clusters
+# rhy.daypeaking.cluster %>%
+#   go_enrichment_plot(clean = "no",
+#                      # function.dir = path_to_repo,
+#                      fdr = 5)
+# # # view the results
+# # rhy.24.daypeaking.cluster.3.4 %>% head() %>% view()
+# 
+# 
+# ## night-peaking | cluster 1 ##
+# rhy.nightpeaking.cluster <-
+#   my_gene_col %>%
+#   rownames_to_column(var = "gene") %>%
+#   filter(cluster == 1) %>%
+#   pull(gene)
 
 # %>%
 #   go_enrichment(.,
@@ -286,4 +282,39 @@ length(rhy.nightpeaking.cluster)
 #                      # function.dir = path_to_repo,
 #                      fdr = 1)
 
+################ Export for enrichment on robins site -------------------------
+#get robin names
+names_robin_ncbi <- read_csv("data/input/ophio_cflo/ophio_cflo_gene_names_robin_ncbi.csv")
 
+merge <- 
+  my_gene_col %>%
+  rownames_to_column(var = "gene") %>%
+  filter(cluster == 2) # %in% c(1,3)) # %in% c=(1,2) for filter in 2, == for one  
+
+hoi <- left_join(merge, names_robin_ncbi, by=c('gene' = 'gene_ID_ncbi'))
+cluster.file.name <- paste0('./results/temp_files/',sample.name,'_',period,'_cluster_Ye.csv')
+write.csv(hoi, cluster.file.name)
+
+# cluster.file.name.N <- paste0('./results/peaking_clusters/night_peaking_Ncbi_IDs_',sample.name,'_',period,'h.txt')
+# lapply(rhy.nightpeaking.cluster, write, append=TRUE, cluster.file.name.N, ncolumns=2000)
+# length(rhy.nightpeaking.cluster)
+
+####### File with all gene names and their cluster from hierachical clustering
+
+new <- 
+  my_gene_col %>%
+  rownames_to_column(var = "gene") 
+
+## add gene_ID_robin
+
+#first get rid of extra cols
+names_robin_ncbi <- read_csv("data/input/ophio_cflo/ophio_cflo_gene_names_robin_ncbi.csv")
+
+names_robin_ncbi$start=NULL
+names_robin_ncbi$end=NULL
+
+hoi2 <- left_join(names_robin_ncbi, new, by=c('gene_ID_ncbi'= 'gene'))
+file.name <- paste0('./results/temp_files/',sample.name,'_',period,'_hierachical_clusters.csv')
+write.csv(hoi2, file.name)
+
+###################################### ---------------------------
