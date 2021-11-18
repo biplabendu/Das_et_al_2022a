@@ -52,7 +52,7 @@ src_dbi(data.db)
 # 01. General patterns of gene expression ---------------------------------
 #
 # specify sample for analysis
-sample.name <- 'ophio_cflo'
+sample.name <- 'beau'
 #
 # number of all genes
 all.genes <- tbl(data.db, paste0(sample.name ,"_fpkm")) %>%  
@@ -162,7 +162,7 @@ my_hclust_gene <- hclust(dist(zscore.rhy), method = "complete")
 
 
 # Make annotations for the heatmaps
-my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 4) # k=  clusters
+my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 2) # k=  clusters
 my_gene_col <- data.frame(cluster = my_gene_col)
 
 
@@ -204,17 +204,17 @@ rhy.heat <-
                          legend = T)
 
 # To save the heatmap to a pdf, run this code. For this to work make sure the heatmap is stored in the variable rhy.heat
-# save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
-#   stopifnot(!missing(x))
-#   stopifnot(!missing(filename))
-#   pdf(filename, width=width, height=height)
-#   grid::grid.newpage()
-#   grid::grid.draw(x$gtable)
-#   dev.off()
-# }
-# name.path.file <- paste0('./results/heatmap/rhy_heatmap_',sample.name,'_',period,'h_2clusters.pdf')
-# save_pheatmap_pdf(rhy.heat, name.path.file)
-  
+save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
+  stopifnot(!missing(x))
+  stopifnot(!missing(filename))
+  pdf(filename, width=width, height=height)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+name.path.file <- paste0('./results/heatmap/rhy_heatmap_test.pdf')
+save_pheatmap_pdf(rhy.heat, name.path.file)
+
 # run enrichment for day/night-peaking clusters ---------------------------
 
 # Run enrichment for diurnal (24h-rhythmic) genes
