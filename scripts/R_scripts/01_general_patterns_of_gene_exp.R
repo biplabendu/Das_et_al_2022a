@@ -9,6 +9,7 @@ rm(list = ls())
 ## Load packages ----------
 pacman::p_load(pheatmap, dendextend, tidyverse, viridis, ggthemes)
 pacman::p_load(RSQLite, tidyverse, dbplyr, DT, conflicted)
+pacman::p_load(glue)
 #
 # set conflict preference (housekeeping to make sure functions work as expected)
 conflict_prefer("select", "dplyr")
@@ -128,7 +129,7 @@ length(expressed)
 ## Note, ordered according to their p-value; highly rhythmic at the top.
 #
 # Choose period
-period = '24'
+period = '08'
 
 # Ultradian genes (period = 8h)
 ## 
@@ -162,7 +163,7 @@ my_hclust_gene <- hclust(dist(zscore.rhy), method = "complete")
 
 
 # Make annotations for the heatmaps
-my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 2) # k=  clusters
+my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 4) # k=  clusters
 my_gene_col <- data.frame(cluster = my_gene_col)
 
 
@@ -203,17 +204,17 @@ rhy.heat <-
                          ## Color scale
                          legend = T)
 
-# To save the heatmap to a pdf, run this code. For this to work make sure the heatmap is stored in the variable rhy.heat
-save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
-  stopifnot(!missing(x))
-  stopifnot(!missing(filename))
-  pdf(filename, width=width, height=height)
-  grid::grid.newpage()
-  grid::grid.draw(x$gtable)
-  dev.off()
-}
-name.path.file <- paste0('./results/heatmap/rhy_heatmap_test.pdf')
-save_pheatmap_pdf(rhy.heat, name.path.file)
+# # To save the heatmap to a pdf, run this code. For this to work make sure the heatmap is stored in the variable rhy.heat
+# save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
+#   stopifnot(!missing(x))
+#   stopifnot(!missing(filename))
+#   pdf(filename, width=width, height=height)
+#   grid::grid.newpage()
+#   grid::grid.draw(x$gtable)
+#   dev.off()
+# }
+# name.path.file <- paste0('./results/heatmap/rhy_heatmap_test.pdf')
+# save_pheatmap_pdf(rhy.heat, name.path.file)
 
 # run enrichment for day/night-peaking clusters ---------------------------
 
@@ -284,12 +285,12 @@ save_pheatmap_pdf(rhy.heat, name.path.file)
 
 ################ Export for enrichment on robins site -------------------------
 #get robin names
-names_robin_ncbi <- read_csv("data/input/ophio_cflo/ophio_cflo_gene_names_robin_ncbi.csv")
+names_robin_ncbi <- read_csv(glue("data/input/{sample.name}/{sample.name}_gene_names_robin_ncbi.csv"))
 
-merge <- 
+merge <-
   my_gene_col %>%
   rownames_to_column(var = "gene") %>%
-  filter(cluster == 2) # %in% c(1,3)) # %in% c=(1,2) for filter in 2, == for one  
+  filter(cluster == 4) # %in% c(1,3)) # %in% c=(1,2) for filter in 2, == for one
 
 hoi <- left_join(merge, names_robin_ncbi, by=c('gene' = 'gene_ID_ncbi'))
 cluster.file.name <- paste0('./results/temp_files/',sample.name,'_',period,'_cluster_Ye.csv')
@@ -308,13 +309,15 @@ new <-
 ## add gene_ID_robin
 
 #first get rid of extra cols
-names_robin_ncbi <- read_csv("data/input/ophio_cflo/ophio_cflo_gene_names_robin_ncbi.csv")
+names_robin_ncbi <- read_csv(glue("data/input/{sample.name}/{sample.name}_gene_names_robin_ncbi.csv"))
 
 names_robin_ncbi$start=NULL
 names_robin_ncbi$end=NULL
 
-hoi2 <- left_join(names_robin_ncbi, new, by=c('gene_ID_ncbi'= 'gene'))
+hoi2 <- left_join(new, names_robin_ncbi, by=c('gene' = 'gene_ID_ncbi')) 
+hoi2 <- hoi2[,c(1,3,2)]
 file.name <- paste0('./results/temp_files/',sample.name,'_',period,'_hierachical_clusters.csv')
 write.csv(hoi2, file.name)
 
 ###################################### ---------------------------
+
