@@ -40,7 +40,7 @@ conflict_prefer("layout", "plotly")
 conflict_prefer("hclust", "flashClust")
 
 #' set path to your working directory
-path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a"
+path_to_repo = "."
 
 # script name
 script.name = "02_build_annotate_circadianGCN_beau"
@@ -73,7 +73,7 @@ Dataset: Healthy (uninfected, uninjected) Cflo forager ant heads (three pooled p
 db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_data.db"))
 
 # specify sample name
-sample.name <- "beau"
+sample.name <- "ophio_cflo"
 
 # extract the (gene-expr X time-point) data
 dat <-
@@ -461,8 +461,7 @@ ejtk.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6
 
 # DEFINE GENES OF INTEREST
 
-rhy.24 <-
-  tbl(ejtk.db, paste0(sample.name,"_zscores_24h")) %>% 
+rhy.24 <- tbl(ejtk.db, paste0(sample.name,"_zscores_24h")) %>% 
     filter(GammaP < 0.05) %>% pull(ID)
 
 rhy.12 <-
@@ -483,6 +482,12 @@ rhy.08 <-
 ```{r find_genes_in_network_1}
 pacman::p_load(GeneOverlap)
 # https://www.bioconductor.org/packages/devel/bioc/vignettes/GeneOverlap/inst/doc/GeneOverlap.pdf
+mergedMEs=read_csv('./results/networks/beau_gene_IDs_and_module_identity.csv')
+
+colors <- mergedMEs$module_identity %>% unique()
+module_colors <- mergedMEs$module_identity %>% unique()
+
+mergedMEs$gene_ID_ncbi[mergedMEs$module_identity == colors[1]] 
 
 # Make a list that returns gene names for a given cluster
 module_color = colors
@@ -492,11 +497,10 @@ module_colors <-
   mutate(module_color = str_replace(module_label, "ME", ""))
 
 module_genes <- list()
-module_color <- module_colors$module_color
+module_color <- module_colors
 # Get the genes from each of the modules
 for (i in 1:length(module_color)) {
-
-  module_genes[[i]] <- names(datExpr)[which(moduleColors==module_color[[i]])]
+  module_genes[[i]] <- mergedMEs$gene_ID_ncbi[mergedMEs$module_identity == colors[i]] 
   names(module_genes)[[i]] <- module_color[[i]]
 }
 # check the result | works
