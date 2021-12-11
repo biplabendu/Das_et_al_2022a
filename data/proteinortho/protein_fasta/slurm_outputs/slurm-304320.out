@@ -1,0 +1,23 @@
+*****************************************************************
+Proteinortho with PoFF version 5.16 - An orthology detection tool
+*****************************************************************
+Detected 64 available CPU threads, Detected NCBI BLAST version 2.6.0+
+Checking input files
+Checking ./beau_protein... ok
+Checking ./ophcf2_protein... ok
+
+**Step 1**
+Generating indices
+Building database for './beau_protein'	(10364 sequences)
+Building database for './ophcf2_protein'	(7455 sequences)
+*****************************************************************
+Proteinortho with PoFF version 5.16 - An orthology detection tool
+*****************************************************************
+Detected 64 available CPU threads, Detected NCBI BLAST version 2.6.0+
+Checking input files
+Checking ./beau_protein... ok
+Checking ./ophcf2_protein... ok
+
+**Step 2**
+                                                                               Running blast analysis: 0% (0/1)                                                                               Running blast analysis: 100% (1/1)                                                                               Running blast analysis: 100% (1/1)
+[OUTPUT] -> written to ophcf2_v_beau_1.blast-graph
