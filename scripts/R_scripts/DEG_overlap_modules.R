@@ -73,7 +73,7 @@ module_genes <- list()
 module_color <- module_colors
 # Get the genes from each of the modules
 for (i in 1:length(module_color)) {
-  module_genes[[i]] <- mergedMEs$gene_ID_ncbi[mergedMEs$module_identity == colors[i]] 
+  module_genes[[i]] <- mergedMEs$gene_ID_robin[mergedMEs$module_identity == colors[i]] 
   names(module_genes)[[i]] <- module_color[[i]]
 }
 
@@ -81,7 +81,7 @@ for (i in 1:length(module_color)) {
 
 # load ejtk database
 
-install.packages("readxl")
+#install.packages("readxl")
 
 library("readxl")
 
