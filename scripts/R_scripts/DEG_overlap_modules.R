@@ -123,20 +123,26 @@ trash <- dev.off()
 
 
 ############ DEG and rhy
-ejtk.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_ejtk.db"))
+# ejtk.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_ejtk.db"))
+dat2 <- read.csv(glue('{path_to_repo}/data/ophio_cflo_TC6_data.csv'))
+
 
 # DEFINE GENES OF INTEREST
 
-rhy.24 <- tbl(ejtk.db, paste0(sample.name,"_zscores_24h")) %>% 
-  filter(GammaP < 0.05) %>% pull(ID)
+rhy.24 <- dat2 %>% 
+  filter(GammaP_24h < 0.05) %>% 
+  pull(gene_ID_robin) %>% 
+  as.character()
 
-rhy.12 <-
-  tbl(ejtk.db, paste0(sample.name,"_zscores_12h")) %>% 
-  filter(GammaP < 0.05) %>% pull(ID)
+rhy.12 <- dat2 %>% 
+  filter(GammaP_12h < 0.05) %>% 
+  pull(gene_ID_robin) %>% 
+  as.character()
 
-rhy.08 <- 
-  tbl(ejtk.db, paste0(sample.name,"_zscores_08h")) %>% 
-  filter(GammaP < 0.05) %>% pull(ID)
+rhy.08 <- dat2 %>% 
+  filter(GammaP_08h < 0.05) %>% 
+  pull(gene_ID_robin) %>% 
+  as.character()
 
 
 
@@ -149,6 +155,34 @@ sapply(list1, length)
 gom.1v2 <- newGOM(list1, list2,
                   genome.size = nGenes)
 png(paste0(path_to_repo, "/results/figures/", sample.name,"_DEG_rhy_gom_1v2.png"), 
+    width = 20, height = 30, units = "cm", res = 300)
+drawHeatmap(gom.1v2,
+            adj.p=T,
+            cutoff=0.05,
+            what="odds.ratio",
+            # what="Jaccard",
+            log.scale = T,
+            note.col = "grey80")
+trash <- dev.off()
+
+
+#### Overlap all rhythmic genes and DEG
+
+# check lenght of all rhy genes = 2921 
+# length(rhy.24) + length(rhy.12) + length(rhy.08)
+
+list1 <- c(rhy.24, rhy.12, rhy.08) %>% 
+  unique()
+
+## LIST TWO - rhythmic genes
+list1 <- list(list1, list1, list1)
+
+names(list1) <- paste0(sample.name, c("all_rhy", "copy", 'copy'))
+sapply(list1, length)
+
+gom.1v2 <- newGOM(list1, list2,
+                  genome.size = nGenes)
+png(paste0(path_to_repo, "/results/figures/", sample.name,"_DEG_all_rhy_gom_1v2.png"), 
     width = 20, height = 30, units = "cm", res = 300)
 drawHeatmap(gom.1v2,
             adj.p=T,
