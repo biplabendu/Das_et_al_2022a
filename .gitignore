@@ -17,3 +17,4 @@ results/temp_files/sim_matrix_ophio_kim_TC6.RData
 scripts/python_scripts/.ipynb_checkpoints/plot_expression_data-checkpoint.ipynb
 scripts/python_scripts/plot_expression_data.ipynb
 results/temp_files/modulePreservation_arb2_sc16a.RData
+*.db
