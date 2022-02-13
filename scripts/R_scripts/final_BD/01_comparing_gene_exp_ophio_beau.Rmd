@@ -1,0 +1,1234 @@
+---
+title: "Fungal-clocks: Ophio v. Beau"
+author: Biplabendu Das
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: united
+    keep_md: no
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = F)
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(engine.opts = list(bash = "-l"))
+
+## For more inspiration on customizing the html output, refer to the following:
+# https://bookdown.org/yihui/rmarkdown/html-document.html#table-of-contents
+
+```
+
+
+```{r housekeeping, include=FALSE}
+set.seed(420)
+rm(list = ls())
+
+## Load the libraries
+pacman::p_load(pheatmap, dendextend, tidyverse, viridis)
+pacman::p_load(RSQLite, tidyverse, dbplyr, DT, conflicted)
+pacman::p_load(patchwork, glue)
+pacman::p_load(circular)
+
+## set conflict preference
+conflict_prefer("select", "dplyr")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("layout", "plotly")
+conflict_prefer("hclust", "flashClust")
+conflict_prefer("union", "dplyr")
+
+## set path to your working directory
+path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a"
+
+## load functions
+# customized theme for publication quality figures
+source(paste0(path_to_repo,"/functions/theme_publication.R"))
+# function to perform enrichment analysis
+source(paste0(path_to_repo,"/functions/enrichment_analysis.R"))
+# # function to plot z-scores (Cflo genes only)
+source(paste0(path_to_repo,"/functions/plot_zscores.R"))
+
+```
+
+
+```{r set_parameters}
+
+# SAMPLE NAME
+## specify sample name
+sample.name <- c("beau", "ophio_cflo", "ophio_kim")
+## color scheme for the samples
+col.scheme <- c("#5A829F", "#AD212F", "black")
+
+# SCRIPT NAME
+## specify the name of the script (folder) where figures will be saved
+script.name <- "01_comparing_gene_exp_ophio_beau"
+
+# eJTK OUTPUT
+## Set GammaP threshold below which genes are classified as rhythmic
+gamma.pval = 0.05
+## Set false discovery rate for functional enrichment analyses
+FDR = 5
+
+```
+
+
+```{r load_data}
+
+# LOAD DATABASES (TC7)
+# 1. TC6_ejtk.db
+# Desc: This database contains all ejtk-output for TC6
+ejtk.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_ejtk.db"))
+# which tables are in the database
+src_dbi(ejtk.db)
+#
+# 2. TC6_data.db
+data.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_data.db"))
+src_dbi(data.db)
+#
+
+```
+
+
+## Overview/Goals
+
+## 1. General patterns of gene expression
+
+```{r general_exp}
+# number of all genes
+all.genes <- list()
+for (i in 1:length(sample.name)) {
+  all.genes[[i]] <- tbl(data.db, paste0(sample.name[[i]] ,"_fpkm")) %>%  
+    collect()
+  
+  writeLines(paste("Number of genes in", sample.name[[i]], ":", nrow(all.genes[[i]])))
+}
+
+# A1: genes that have NO expression (FPKM == 0 at all time points)
+not.expressed <- list()
+for (i in 1:length(sample.name)) {
+  not.expressed[[i]] <-
+    tbl(data.db, paste0(sample.name[[i]] ,"_fpkm")) %>% 
+    collect() %>% 
+    filter_at(vars(starts_with("Z")), all_vars(. == 0)) %>%
+    pull(gene_name)
+  
+  # How many genes are not expressed?
+  writeLines(paste("n(genes-NOT-EXPRESSED) in", sample.name[[i]], ":", length(not.expressed[[i]])))
+  
+}
+
+# A2: run enrichment (make plot of enrichment found of non-expressed genes)
+for (i in 1:length(sample.name)) {
+  writeLines(paste("running GO enrichment for NOT-EXPRESSED genes in", sample.name[[i]]))
+  # run enrichment
+  not.expressed[[i]] %>% 
+    go_enrichment(., 
+                  org = sample.name[[i]], 
+                  function.dir = path_to_repo,
+                  bg = 'all') %>% # enrichment against all ophio_cflo genes in the genome
+    
+    # # pull gene names for a given GO term
+    # separate_rows(., gene_name, sep = ", ") %>%
+    # filter(GO == "GO:0009405") %>% # pathogenesis
+    # # filter(GO == "GO:0090729") %>% # toxin activity
+    # # filter(GO == "GO:0044419") %>% # interspecies interaction between organisms
+    # # filter(GO == "GO:0020037") %>% # heme binding
+    # pull()
+    
+    go_enrichment_plot(clean = "no",
+                       function.dir = path_to_repo) %>% 
+    print()
+  
+}
+
+# B: genes that are expressed (FPKM > 1 for at least one time point)
+expressed <- list()
+for (i in 1:length(sample.name)) {
+  expressed[[i]] <- 
+    tbl(data.db, paste0(sample.name[[i]],"_expressed_genes")) %>% 
+    filter(expressed=="yes") %>% 
+    collect() %>% 
+    pull(gene_name) 
+  
+  # How many genes are expressed?
+  writeLines(paste("n(EXPRESSED) in", sample.name[[i]], ":", length(expressed[[i]])))
+}
+
+```
+
+
+## 2. Daily rhythms in gene expression
+
+```{r daily_exp}
+
+## Load all the rhythmic genesets 
+## Note, ordered according to their p-value; highly rhythmic at the top.
+#
+# Choose period
+period = '24'
+
+## 
+rhy <- list()
+for (i in 1:2) {
+  rhy[[i]] <-
+    tbl(ejtk.db, paste0(sample.name[[i]],"_zscores_",period,'h')) %>%
+    filter(GammaP < gamma.pval) %>%
+    select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
+    select(ID) %>% pull()
+  
+  # How many genes are rythmic?
+  writeLines(paste0("n(rhythmic-",period, "h) in ", sample.name[[i]], " : ", length(rhy[[i]])))
+}
+
+```
+
+
+### Hierarchical clustering of rhy24
+
+- perform hierarchical clustering of 24h-rhythmic genes into four clusters;
+- plot time-course heatmaps for the clustered 24h-rhythmic geneset
+- Identify the day-peaking and night-peaking clusters visually.
+
+```{r clustering_24h}
+
+# Choose period
+period = '24'
+
+## 
+rhy <- list()
+for (i in 1:2) {
+  rhy[[i]] <-
+    tbl(ejtk.db, paste0(sample.name[[i]],"_zscores_",period,'h')) %>%
+    filter(GammaP < gamma.pval) %>%
+    select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
+    select(ID) %>% pull()
+  
+  # How many genes are rythmic?
+  writeLines(paste0("n(rhythmic-",period, "h) in ", sample.name[[i]], " : ", length(rhy[[i]])))
+}
+
+## initialise lists to hold input and output of the hierarchical clustering
+zscore.dat <- list() # zscore data (input)
+my_gene_col <- list() # cluster identity for each rhythmic gene (output)
+rhy.heat <- list() # pheatmap that can be saved/plotted (output)
+
+# specify number of clusters
+n_clusters <- 4
+
+## run clustering and plot
+for (i in 1:2) {
+  ## load zscore dataset
+  zscore.dat[[i]] <- data.db %>% tbl(., paste0(sample.name[[i]],"_zscores")) %>% collect()
+  
+  # Filter the zscores to keep only rhythmic genes
+  zscore.rhy <-
+    zscore.dat[[i]] %>% 
+    filter(gene_name %in% rhy[[i]]) %>% 
+    as.data.frame()
+  
+  # Set genes as rownames and convert it into a matrix
+  rownames(zscore.rhy) = zscore.rhy$gene_name
+  zscore.rhy <- as.matrix(zscore.rhy[-1])
+  
+  
+  # Hierarchical clustering of the genesets
+  my_hclust_gene <- hclust(dist(zscore.rhy), method = "complete")
+  
+  
+  # Make annotations for the heatmaps
+  my_clusters <- cutree(tree = as.dendrogram(my_hclust_gene), k = n_clusters) # k=  clusters
+  my_gene_col[[i]] <- data.frame(cluster = my_clusters)
+  
+  
+  # I’ll add some column annotations and create the heatmap.
+  # Annotations for:
+  # 1. Is the sample collected during the light or dark phase? 
+  my_sample_col <- data.frame(phase = rep(c("light", "dark", "light"), c(5,6,1)))
+  row.names(my_sample_col) <- colnames(zscore.rhy)
+  
+  # Manual color palette
+  my_colour = list(
+    phase = c(light = "#F2E205", dark = "#010440"),
+    cluster = viridis::cividis(100)[c(10,90,60,30)]) #### NEED TO CHANGE #### account for n_clusters
+  
+  # Color scale
+  my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.1)
+  # my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.06)
+  
+  # Let's plot!
+  rhy.heat[[i]] <-
+    pheatmap(zscore.rhy, show_rownames = F, show_colnames = F,
+             annotation_row = my_gene_col[[i]], 
+             annotation_col = my_sample_col,
+             cutree_rows = n_clusters, # OG was 4
+             cutree_cols = 2,
+             annotation_colors = my_colour,
+             border_color=FALSE,
+             cluster_cols = F,
+             breaks = my.breaks,
+             ## color scheme borrowed from: 
+             color = inferno(length(my.breaks) - 1),
+             # treeheight_row = 0, 
+             # treeheight_col = 0,
+             # remove the color scale or not
+             main = paste0(sample.name[[i]], " 24h-rhythmic \n (n=", nrow(zscore.rhy), " genes)"),
+             ## annotation legend
+             annotation_legend = T,
+             ## Color scale
+             legend = T)
+  
+}
+
+```
+
+
+### Phase plots
+
+```{r phase_plots}
+
+rhy.24.sig <- list()
+phase.ejtk <- list()
+
+# Obtain the phases of 24h-rhythmic genes beau v. ophio_cflo
+for (i in 1:2) {
+
+rhy.24.sig[[i]] <- 
+  tbl(ejtk.db, paste0(sample.name[i],"_zscores_24h")) %>% 
+  filter(GammaP < gamma.pval) %>% 
+  collect()
+
+# Get the phases of the best matched waveforms
+phase.ejtk[[i]] <- circular::circular(rhy.24.sig[[i]]$Phase, units="hours", template="clock24")
+# # Get the time-of-day of expression peak
+# phase.ejtk[[i]] <- circular::circular(rhy.24.sig[[i]]$MaxLoc, units="hours", template="clock24")
+# # Get the time-of-day of expression trough
+# phase.ejtk[[i]] <- circular::circular(rhy.24.sig[[i]]$MinLoc, units="hours", template="clock24")
+
+}
+
+# save all the circular phases in a list
+l.phases <- phase.ejtk
+# let's name the list elements for later use and reference
+names(l.phases) <- sample.name[1:2]
+
+writeLines("Performing Watson test to check if the average peak of 24h-rhythms in Beau and Ophio-cflo differs significantly")
+# For all rhy genes
+beau.ophio <- watson.two.test(l.phases[[1]],l.phases[[2]], alpha = FDR/100)
+writeLines("Beau v. Ophio-cflo")
+beau.ophio %>% print()
+
+## Plot the phase distributions
+
+# Initialize a list for saving the ggplots
+g <- list()
+
+means <- as.numeric(lapply(phase.ejtk, mean))
+means <- circular(means, units="hours", template="clock24")
+
+
+for(i in 1:length(l.phases)) {
+  
+  # define phase levels
+  ordered_phases <- c("2","4","6","8","10","12",
+                      "14","16","18","20","22","24")
+    
+  df.test <- l.phases[[i]] %>%
+    as.data.frame() %>% 
+    mutate(phase = x) %>%
+    mutate(phase = replace(phase, x=="0", "24")) %>% 
+    select(-x) %>% 
+    group_by(phase = factor(phase, levels = ordered_phases)) %>%
+    summarise(n_genes = n())
+
+  m <- as.numeric(means[i])
+    
+  g[[i]] <-
+    ggplot(df.test, aes(x=factor(phase), y=n_genes)) + 
+    geom_bar(stat='identity', fill=col.scheme[[i]]) +
+    
+    xlab(c(names(l.phases)[i])) +
+    
+    scale_y_continuous(breaks = c(0,200,400,600)) +
+    
+    coord_polar() +
+    theme_Publication() +
+    theme(text = element_text(size = 15, colour = 'black'),
+              # axis.title.x=element_blank(),
+              # axis.text.x=element_blank(),
+              legend.position = "none")
+    #ggtitle(paste0("Dataset: ", names(l.phases)[i])) 
+  
+}
+
+ggpubr::ggarrange(plotlist=g,
+                  nrow = 2, ncol = 1,
+                  widths = c(1,2), labels = NA)
+
+```
+
+
+### Clusters of rhythmic genes
+
+- Which processes are identified clusters of rhythmic genes involved in?
+- How do they fluctuate throughout the day?
+
+#### Beau - 24h
+
+```{r beau_clusters}
+  
+for (i in 1:n_clusters){
+  
+  writeLines(paste0("Species: ", sample.name[[1]], "\n", "24h-rhythmic genes, Cluster: ", i))
+  
+  # Summary
+  genes <- my_gene_col[[1]] %>% rownames_to_column("g") %>% filter(cluster==as.character(i)) %>% pull(g)
+  writeLines(paste0("n(genes) = ", length(genes),"\n"))
+  
+  # Enrichment
+  overrepresented.terms <-
+    genes %>% 
+      go_enrichment(.,
+                    function.dir = path_to_repo,
+                    org = sample.name[[1]],
+                    bg = expressed[[1]]) %>% 
+      filter(adj_pVal < FDR/100) %>% 
+      filter(over_under == "over")
+  writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
+  
+  # Enriched terms word-cloud (borrowed from: https://towardsdatascience.com/create-a-word-cloud-with-r-bde3e7422e8a)
+  if (nrow(overrepresented.terms)>0){
+    # load libraries
+    pacman::p_load(tm, wordcloud, RColorBrewer, wordcloud2)
+    # get text as a character vector
+    text <- overrepresented.terms %>% pull(GO_desc)
+    # load your text data as a corpus
+    docs <- Corpus(VectorSource(text)) # requires library "tm"
+    # clean text (necessary?)
+    docs <- docs %>%
+              tm_map(removeNumbers) %>%
+              tm_map(removePunctuation) %>%
+              tm_map(stripWhitespace)
+    docs <- tm_map(docs, content_transformer(tolower))
+    docs <- tm_map(docs, removeWords, c("process", "molecular","cellular",
+                                        "component", "compound", "part",
+                                        "activity", "acid"
+                                        ))
+    # create document-term-matrix
+    dtm <- TermDocumentMatrix(docs) 
+    matrix <- as.matrix(dtm) 
+    words <- sort(rowSums(matrix),decreasing=TRUE) 
+    df <- data.frame(word = names(words),freq=words)
+    # generate word-cloud
+    wordcloud::wordcloud(words = df$word, freq = df$freq, min.freq = 2,
+              max.words=200, random.order=FALSE, rot.per=0.35,
+              scale=c(5,0.15),
+              # colors=brewer.pal(8, "Dark2")
+              colors=col.scheme[[1]]
+              )
+    
+    ## save overrepresented GO terms for REVIGO analyses
+      overrepresented.terms %>% select(GO, adj_pVal) %>% 
+        readr::write_tsv(., paste0(path_to_repo,"/results/go_temp_files/",sample.name[[1]],"_Cluster_",i,".txt"))
+      
+  }
+  # Stacked zplot
+  genes %>% 
+  stacked.zplot_tc6(cond = "beau") %>% 
+    multi.plot(rows = 1, cols = 1)
+  
+}
+
+```
+
+#### Ophio-cflo - 24h
+
+```{r ophio_clusters}
+  
+for (i in 1:n_clusters){
+  
+  writeLines(paste0("Species: ", sample.name[[2]], "\n", "24h-rhythmic genes, Cluster: ", i))
+  
+  # Summary
+  genes <- my_gene_col[[2]] %>% rownames_to_column("g") %>% filter(cluster==as.character(i)) %>% pull(g)
+  writeLines(paste0("n(genes) = ", length(genes),"\n"))
+  
+  # Enrichment
+  overrepresented.terms <-
+    genes %>% 
+      go_enrichment(.,
+                    function.dir = path_to_repo,
+                    org = sample.name[[2]],
+                    bg = expressed[[2]]) %>% 
+      filter(adj_pVal < FDR/100) %>% 
+      filter(over_under == "over")
+  writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
+  
+  # Enriched terms word-cloud (borrowed from: https://towardsdatascience.com/create-a-word-cloud-with-r-bde3e7422e8a)
+    if (nrow(overrepresented.terms) > 0) {
+      # load libraries
+      pacman::p_load(tm, wordcloud, RColorBrewer, wordcloud2)
+      # get text as a character vector
+      text <- overrepresented.terms %>% pull(GO_desc)
+      # load your text data as a corpus
+      docs <- Corpus(VectorSource(text)) # requires library "tm"
+      # clean text (necessary?)
+      docs <- docs %>%
+                tm_map(removeNumbers) %>%
+                tm_map(removePunctuation) %>%
+                tm_map(stripWhitespace)
+      docs <- tm_map(docs, content_transformer(tolower))
+      docs <- tm_map(docs, removeWords, c("process", "molecular","cellular",
+                                          "component", "compound", "part",
+                                          "activity", "acid"
+                                          ))
+      # create document-term-matrix
+      dtm <- TermDocumentMatrix(docs) 
+      matrix <- as.matrix(dtm) 
+      words <- sort(rowSums(matrix),decreasing=TRUE) 
+      df <- data.frame(word = names(words),freq=words)
+      # generate word-cloud
+      wordcloud::wordcloud(words = df$word, freq = df$freq, min.freq = 2,
+                max.words=200, random.order=FALSE, rot.per=0.35,
+                scale=c(4,0.15),
+                # colors=brewer.pal(8, "Dark2")
+                colors=col.scheme[[2]]
+                )
+      
+      ## save overrepresented GO terms for REVIGO analyses
+      overrepresented.terms %>% select(GO, adj_pVal) %>% 
+        # readr::write_tsv(., paste0("./results/go_temp_files/",sample.name[[2]],"_Cluster_",i,".txt"))
+        write.table(., paste0(path_to_repo,"/results/go_temp_files/",sample.name[[2]],"_Cluster_",i,".csv"),
+                    sep = ",",
+                    row.names = F, col.names = F)
+      
+    }
+  
+  
+  # Stacked zplot
+  genes %>% 
+  stacked.zplot_tc6(cond = "ophio_cflo") %>% 
+    multi.plot(rows = 1, cols = 1)
+  
+}
+
+```
+
+### Reduce redundant GO terms
+
+Two options to do this:
+
+Option #1: Get the list of overrepresented GO terms and their associated p-values and use REVIGO portal online to reduce the redundant terms
+
+Option #2: Use the scripts provided by REVIGO to programmatically run REVIGO using bash/R. For more information see (here)[http://revigo.irb.hr/FAQ.aspx#q07]
+Status: tried running it via bash, and it didn't work; NEED TO FIGURE IT OUT.
+
+## 3. Beau v. Ophio - 24h-rhy
+
+Next, we compare the homologous genes in both the fungi to understand if the rhythmic genes (and processes) in the two fungi are similar or not; also, is there any differences in the daily expression of these genes between the two fungal parasites?
+
+### Obtain homology data
+
+```{r homologous_genes}
+
+# Read the source file
+homology.file <- "ophio_beau_homology.csv"
+homology.file <- 
+  paste0(path_to_repo, "/results/proteinortho/", homology.file) %>% 
+  read.csv(., stringsAsFactors = F, na.strings = c(" ","","NA"))
+
+# Clean the source file to keep distinct gene-gene homologs
+homology.dat <-
+  homology.file %>% 
+  # names() %>% 
+  select(ophio_gene, beau_gene) %>% 
+  na.omit() %>% 
+  distinct() %>% 
+  group_by(beau_gene) %>% 
+  filter(n()==1) %>% 
+  select(beau_gene, ophio_gene)
+
+writeLines(paste("Of the", length(expressed[[2]]), "genes expressed in Ophio-cflo,",
+                 "and", length(expressed[[1]]), "genes expressed in Beau",
+                 nrow(homology.dat), "genes show one-to-one orthology"))
+
+```
+
+### Summarize the results
+
+```{r homology_summary}
+
+for (i in 1:2){
+  
+  # exp.dat <- expressed[[i]]
+  rhy.dat <- rhy[[i]]
+  ortho.dat <- homology.dat %>% pull(i) 
+
+  listInput <- list(rhy.dat, ortho.dat)
+  names(listInput) <- c(paste0(sample.name[[i]], c("_rhy24","_ortho")))
+  
+  library(UpSetR)
+  library(viridis)
+  # caste.col <- c("#F23030","#1A80D9")
+  upset(fromList(listInput), 
+        number.angles = 0, point.size = 3, line.size = 1.5, 
+        mainbar.y.label = "Number of overlapping genes", 
+        sets.x.label = "Sig. rhy genes", 
+        text.scale = c(1.5, # y-axis label ("# overlapping genes")
+                       2, # y-axis tick labels ("1000, 2000,..")
+                       1.5, # label for histogram ("sig. rhy genes")
+                       1, # tick labels for histogram
+                       1.5, # set names ("Cflo-brain_08h,..") 
+                       1.5),
+        sets = names(listInput),
+        nintersects = 15,
+        keep.order = T,
+        sets.bar.color = viridis(1),
+        # adding queries
+        query.legend = "bottom"
+        ) %>% 
+    print()
+}
+
+```
+
+
+### Rhy24 genes w/ orthologs
+
+```{r ortho_rhy24}
+rhy.homology.dat <- 
+  homology.dat %>% 
+  filter(beau_gene %in% rhy[[1]] | ophio_gene %in% rhy[[2]])
+
+```
+
+### Hierarchical clustering
+
+```{r ortho_rhy_clusters}
+  
+### Make the dataframe for plotting
+zscore.rhy.homology.dat <-
+  zscore.dat[[1]] %>% 
+  filter(gene_name %in% rhy.homology.dat[[1]]) %>% 
+  rename_at(vars(starts_with("ZT")), ~ (gsub("A", "B", .x, fixed = TRUE))) %>% # fix colnames for beau
+  # add ophio homologs for the beau genes
+  left_join(rhy.homology.dat, by=c("gene_name" = "beau_gene")) %>%
+  # remove the beau names and keep the ophio names only
+  select(-1) %>% 
+  select(gene_name = ophio_gene, everything()) %>% 
+  # join ophio-cflo data
+  left_join(zscore.dat[[2]], by="gene_name") %>%
+  # drop any genes without expression values (NA)
+  na.omit() %>% 
+  as.data.frame() %>% 
+  # set genes as rownames
+  column_to_rownames("gene_name")
+
+# Set genes as rownames and convert it into a matrix
+# rownames(zscore.rhy.homology.dat) = zscore.rhy.homology.dat$gene_name
+zscore.rhy.homology.dat <- as.matrix(zscore.rhy.homology.dat)
+
+
+# Hierarchical clustering of the genesets
+my_hclust_gene <- hclust(dist(zscore.rhy.homology.dat), method = "complete")
+
+
+# Make annotations for the heatmaps
+n_clusters <- 4
+my_clusters <- cutree(tree = as.dendrogram(my_hclust_gene), k = n_clusters) # k=  clusters
+my_gene_col <- data.frame(cluster = my_clusters)
+
+
+# I’ll add some column annotations and create the heatmap.
+# Annotations for:
+# 1. Is the sample collected during the light or dark phase? 
+my_sample_col <- data.frame(phase = rep(rep(c("light", "dark", "light"),c(5,6,1)),2),
+                            conds = rep(c("beau", "ophio_cflo"), each=12))
+row.names(my_sample_col) <- colnames(zscore.rhy.homology.dat)
+
+# Manual color palette
+my_colour = list(
+  phase = c(light = "#F2E205", dark = "#010440"),
+  conds = c(beau = "#5A829F", ophio_cflo = "#AD212F"),
+  cluster = viridis::cividis(100)[c(10,90,60,30)]) #### NEED TO CHANGE #### account for n_clusters
+
+# Color scale
+my.breaks = seq(min(zscore.rhy.homology.dat), max(zscore.rhy.homology.dat), by=0.1)
+# my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.06)
+
+# Let's plot!
+pheatmap(zscore.rhy.homology.dat, show_rownames = F, show_colnames = F,
+           annotation_row = my_gene_col, 
+           annotation_col = my_sample_col,
+           cutree_rows = n_clusters, # OG was 4
+           cutree_cols = 4,
+           annotation_colors = my_colour,
+           border_color=FALSE,
+           cluster_cols = F,
+           breaks = my.breaks,
+           ## color scheme borrowed from: 
+           color = inferno(length(my.breaks) - 1),
+           # treeheight_row = 0, 
+           # treeheight_col = 0,
+           # remove the color scale or not
+           main = paste0("24h-rhythmic \n (n=",
+                         nrow(zscore.rhy.homology.dat), " orthologous genes)"),
+           ## annotation legend
+           annotation_legend = T,
+           ## Color scale
+           legend = T)
+
+
+```
+
+### Individual clusters
+
+```{r ortho_rhy_zplots}
+
+for (j in 1:2) {
+  
+  for (i in 1:n_clusters){
+    
+    writeLines(paste0("Species: ", sample.name[[j]], "\n", "24h-rhythmic genes, Cluster: ", i))
+    
+    # Summary
+    genes <- my_gene_col %>% rownames_to_column("g") %>% filter(cluster==as.character(i)) %>% pull(g)
+    writeLines(paste0("n(genes) = ", length(genes),"\n"))
+    
+    # define the background geneset for enrichment analysis
+    bg.genes <- homology.dat %>% pull(ophio_gene) %>% unique()
+    
+    ## Transform gene names (ophio -> beau) and refine background geneset
+    if (j == 1) {
+      genes <- 
+        homology.dat %>% 
+        filter(ophio_gene %in% genes) %>% 
+        pull(beau_gene)
+      bg.genes <- homology.dat %>% pull(beau_gene) %>% unique()
+    }
+    
+    # Enrichment
+    overrepresented.terms <-
+      genes %>% 
+        go_enrichment(.,
+                      function.dir = path_to_repo,
+                      org = sample.name[[j]],
+                      bg = expressed[[j]]) %>% 
+        filter(adj_pVal < FDR/100) %>% 
+        filter(over_under == "over")
+    writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
+    
+    # Enriched terms word-cloud (borrowed from: https://towardsdatascience.com/create-a-word-cloud-with-r-bde3e7422e8a)
+    if (nrow(overrepresented.terms)>0){
+      # load libraries
+      pacman::p_load(tm, wordcloud, RColorBrewer, wordcloud2)
+      # get text as a character vector
+      text <- overrepresented.terms %>% pull(GO_desc)
+      # load your text data as a corpus
+      docs <- Corpus(VectorSource(text)) # requires library "tm"
+      # clean text (necessary?)
+      docs <- docs %>%
+                tm_map(removeNumbers) %>%
+                tm_map(removePunctuation) %>%
+                tm_map(stripWhitespace)
+      docs <- tm_map(docs, content_transformer(tolower))
+      docs <- tm_map(docs, removeWords, c("process", "molecular","cellular",
+                                          "component", "compound", "part",
+                                          "activity", "acid"
+                                          ))
+      # create document-term-matrix
+      dtm <- TermDocumentMatrix(docs) 
+      matrix <- as.matrix(dtm) 
+      words <- sort(rowSums(matrix),decreasing=TRUE) 
+      df <- data.frame(word = names(words),freq=words)
+      # generate word-cloud
+      wordcloud::wordcloud(words = df$word, freq = df$freq, min.freq = 2,
+                max.words=200, random.order=FALSE, rot.per=0,
+                scale=c(4,0.15),
+                # colors=brewer.pal(8, "Dark2")
+                colors=col.scheme[[j]]
+                )
+      
+      # ## save overrepresented GO terms for REVIGO analyses
+      #   overrepresented.terms %>% select(GO, adj_pVal) %>% 
+      #     readr::write_tsv(., paste0(path_to_repo,"/results/go_temp_files/",
+      #                                sample.name[[1]],"_Cluster_",i,".txt"))
+        
+    }
+    # Stacked zplot
+    genes %>% 
+    stacked.zplot_tc6(cond = sample.name[[j]]) %>% 
+      multi.plot(rows = 1, cols = 1)
+    
+  }
+}
+
+```
+
+### Overlap b/n clusters and rhy24
+
+```{r ortho_rhy_cluster_overlap_v1}
+
+## Visualize the overlap
+
+cluster.dat <- list()
+for (i in 1:n_clusters) {
+    cluster.dat[[i]] <- my_gene_col %>% 
+rownames_to_column("g") %>% filter(cluster==as.character(i)) %>% pull(g)
+}
+names(cluster.dat) <- paste0("Cluster_",1:4)
+
+for (j in 1:2) {
+    
+    rhy.dat <- rhy[[j]]
+    cluster.dat.dummy <- cluster.dat
+    
+    if (j == 1) {
+      for (i in 1:n_clusters) {
+        cluster.dat.dummy[[i]] <- 
+            homology.dat %>% 
+            filter(ophio_gene %in% cluster.dat.dummy[[i]]) %>% 
+            pull(beau_gene)
+      }
+    }
+    
+    listInput <- list(rhy.dat, 
+                      cluster.dat.dummy[[1]], cluster.dat.dummy[[2]], 
+                      cluster.dat.dummy[[3]], cluster.dat.dummy[[4]])
+    names(listInput) <- c(paste0(sample.name[[j]], c("_rhy24")), paste0("cluster_",1:4))
+    
+    library(UpSetR)
+    library(viridis)
+    # caste.col <- c("#F23030","#1A80D9")
+    upset(fromList(listInput), 
+          number.angles = 0, point.size = 3, line.size = 1.5, 
+          mainbar.y.label = "Number of overlapping genes", 
+          sets.x.label = "Sig. rhy genes", 
+          text.scale = c(1.5, # y-axis label ("# overlapping genes")
+                         2, # y-axis tick labels ("1000, 2000,..")
+                         1.5, # label for histogram ("sig. rhy genes")
+                         1, # tick labels for histogram
+                         1.5, # set names ("Cflo-brain_08h,..") 
+                         1.5),
+          sets = names(listInput),
+          nintersects = 15,
+          keep.order = T,
+          sets.bar.color = viridis(1),
+          # adding queries
+          query.legend = "bottom"
+          ) %>% 
+      print()
+  
+}
+
+```
+
+It seems that majority of the genes in Cluster 3 and 4 are sig. rhythmic in Ophio but not in Beau. We will perform the pairwise Fisher's exact test to find out. Let's dig in!
+
+NOTE: We need to think about the best way to perform the Fisher's exact test. For starters, I am transforming all the gene names to Ophio
+
+```{r ortho_rhy_cluster_overlap_v2}
+
+# LIST ONE - Cluster identity
+list1 <- cluster.dat
+names(list1) <- names(cluster.dat)
+
+## LIST TWO - ophio rhythmic genes
+beau.ortho.rhy <- homology.dat %>% filter(beau_gene %in% rhy[[1]]) %>% pull(ophio_gene) %>% unique() 
+ocflo.ortho.rhy <- homology.dat %>% filter(ophio_gene %in% rhy[[2]]) %>% pull(ophio_gene) %>% unique()
+list2 <- list(beau.ortho.rhy, ocflo.ortho.rhy)
+names(list2) <- paste0(sample.name[1:2], c("_24h"))
+
+## CHECK FOR OVERLAP
+library(GeneOverlap)
+
+# define the background geneset 
+# in our case, it would be the number of orthologous genes between beau and Ophio_cflo
+nGenes = homology.dat %>% pull(ophio_gene) %>% unique() %>% length()
+
+## make a GOM object
+gom.1v2 <- newGOM(list1, list2, genome.size = nGenes)
+png(paste0(path_to_repo, "/results/figures/BD/ocflo_beau_orthologs_rhy_overlap.png"),
+    width = 15, height = 15, units = "cm", res = 300)
+drawHeatmap(gom.1v2,
+              adj.p=T,
+              cutoff=0.01,
+              what="odds.ratio",
+              # what="Jaccard",
+              log.scale = T,
+              note.col = "grey60")
+trash <- dev.off()
+
+```
+
+```{r plot_ortho_rhy_cluster_overlap, echo = FALSE, fig.align='center', fig.cap='Orthologous rhy24 genes', out.width="65%"}
+knitr::include_graphics(paste0(path_to_repo, "/results/figures/BD/ocflo_beau_orthologs_rhy_overlap.png"))
+
+```
+
+As we predicted, Cluster 3 and 4 genes show a stronger overlap with 24h-rhythmic genes in O. cflo as comapred to Beauveria (as can be seen from both log2-odds ratio and the associated q-value). The signal is strongest for Cluster 4, so let's see which genes are in this cluster.
+
+### Cluster-4 genes
+
+```{r gene_annotations}
+
+## Get the annotation data
+ocflo.annots <- read.csv(paste0(path_to_repo, "/data/ophio_cflo_TC6_data.csv"), stringsAsFactors = F)
+ocflo.annots %<>% 
+  as.tibble() %>%
+  filter(expressed=="yes") %>%
+  select(gene_name = gene_ID_ncbi, gene_ID_robin, blast_annot, GammaP_24h, GOs:ophio_kim_homolog)
+
+## Subset the gene_names
+ocflo.annots %>% 
+  filter(gene_name %in% cluster.dat[[4]]) %>%
+  
+  # # plot the q-values
+  # ggplot() + 
+  # geom_density(aes(x=GammaP_24h)) +
+  # labs(x="rhythmicity, 24h (q-value)") +
+  # scale_x_continuous(breaks = c(0,0.05, 0.1, 0.5, 1)) +
+  # theme_Publication()
+  
+  filter(!is.na(GOs)) %>% 
+  view()
+
+
+## Check these genes for other annotations (signalP, SSP, TMHMM)
+# LIST ONE - Cluster identity
+list1 <- cluster.dat
+names(list1) <- names(cluster.dat)
+
+## LIST TWO - ophio rhythmic genes
+signalP <- ocflo.annots %>% filter(signalP == "yes") %>% pull(gene_name)
+SSP <- ocflo.annots %>% filter(SSP == "yes") %>% pull(gene_name)
+TMHMM <- ocflo.annots %>% filter(TMHMM == "yes") %>% pull(gene_name)
+list2 <- list(signalP, SSP, TMHMM)
+names(list2) <- paste0(sample.name[[2]], "-", c("signalP", "SSP", "TMHMM"))
+
+## CHECK FOR OVERLAP
+library(GeneOverlap)
+
+# define the background geneset 
+# in our case, it would be the number of orthologous genes between beau and Ophio_cflo
+nGenes = ocflo.annots %>% nrow() 
+
+## make a GOM object
+gom <- newGOM(list1, list2, genome.size = nGenes)
+png(paste0(path_to_repo, "/results/figures/BD/ocflo_beau_orthologs_annots_overlap.png"),
+    width = 15, height = 15, units = "cm", res = 300)
+drawHeatmap(gom,
+              adj.p=T,
+              cutoff=0.01,
+              what="odds.ratio",
+              # what="Jaccard",
+              log.scale = T,
+              note.col = "grey60")
+trash <- dev.off()
+
+```
+
+
+```{r plot_ortho_rhy_cluster_overlap_v2, echo = FALSE, fig.align='center', fig.cap='Overlap of orthologous rhy24 gene clusters with additional annotations', out.width="65%"}
+knitr::include_graphics(paste0(path_to_repo, "/results/figures/BD/ocflo_beau_orthologs_annots_overlap.png"))
+
+```
+
+## 4. Ophio DEGs during infection
+
+### Do prep for analyses
+
+Prepare the functions, libraries required
+
+```{r prep_v1}
+
+# Let's load functions for running limorhyde
+source(system.file('extdata', 'vignette_functions.R', package = 'limorhyde'))
+# Let's load the libraries required for running Limorhyde
+# library('annotate')
+library('data.table')
+library('foreach')
+# library('GEOquery')
+library('ggplot2')
+library('knitr')
+library('limma')
+library('limorhyde')
+
+conflict_prefer("union", "dplyr")
+
+```
+
+### Format metadata
+
+Create dataframe with metadata information for the different samples collected
+
+```{r create_metadata}
+
+sampleName <- c("ophio_cflo","ophio_ophio-infected")
+short.name <- c("AC","AI") # AC = arb2-control, AI = arb2-infection
+time.points <- c(2,4,6,8,10,12,14,16,18,20,22,24)
+light.dark <- c(rep("light",times=5), rep("dark",times=6), rep("light", times=1))
+
+meta <- data.frame(title = paste0(rep(sampleName, each=12),"_ZT",time.points),
+                       sample = paste0(rep(time.points, times=2),rep(short.name, each=12)),
+                       genotype = rep(sampleName, each=12),
+                       time = rep(time.points, times=2),
+                       cond = rep(sampleName, each=12),
+                       LD = rep(light.dark, times=2),
+                       stringsAsFactors = F)
+
+meta %>% glimpse()
+```
+
+Now, format the metadata.
+
+```{r prep_v2}
+### 1.1.1 Format the meta-data ----------------
+# load the meta-data
+sm <- meta
+# Let's format the columns in the right data-type
+sm$time <- as.numeric(sm$time)
+# sm$batch <- as.factor(sm$batch)
+sm$LD <- as.factor(sm$LD)
+# sm$location <- as.factor(sm$location)
+
+# Let's get a glimpse of the metadata
+sm %>% as_tibble() %>% head()
+
+# Next we use limorhyde to calculate time_cos and time_sin, which are based on the first
+#harmonic of a Fourier decomposition of the time column, and append them to the sm data frame.
+sm = cbind(sm, limorhyde(sm$time, 'time_'))
+# convert the dataframe into a data.table
+sm <- data.table(sm)
+# check that it worked
+sm[1:5, ]
+```
+
+### load data
+
+```{r load_ophio_DEG_data}
+
+## DATASET 1
+## Load the control O.cflo data (from TC6)
+ocflo.control.dat <-
+  data.db %>% 
+  tbl(., paste0(sampleName[[1]], "_fpkm")) %>% 
+  select(gene_name, everything()) %>%
+  collect()
+
+## DATASET 2
+## Load the O.cflo infection data from the mixed transcriptomics study (from TC7)
+inf.db <- dbConnect(RSQLite::SQLite(),
+                   paste0(path_to_repo,"/../Das_et_al_2022b/data/databases/TC7_data.db"))
+# src_dbi(inf.db)
+# extract the (gene-expr X time-point) data
+ocflo.inf.dat <-
+  inf.db %>%
+  tbl(., paste0(sampleName[[2]], "_fpkm")) %>%
+  select(gene_name, everything()) %>%
+  collect()
+
+```
+
+### filter data
+
+The goal is to use only the genes that show expression (>1 FPKM) for at least half of the timepoints during the 24h day (i.e., 6 of the 12 timepoints).
+
+```{r prep_v3}
+## DATASET 1
+n.exp.1 <- apply(ocflo.control.dat[-1], 1, function(x) sum(x>=1))
+ocflo.control.dat <- ocflo.control.dat[which(n.exp.1>=6),]
+colnames(ocflo.control.dat)[-1] <- paste0("ZT", meta[meta$cond==sampleName[[1]],] %>% pull(sample))
+
+## DATASET 2
+n.exp.2 <- apply(ocflo.inf.dat[-1], 1, function(x) sum(x>=1))
+ocflo.inf.dat <- ocflo.inf.dat[which(n.exp.2>=6),]
+colnames(ocflo.inf.dat)[-1] <- paste0("ZT", meta[meta$cond==sampleName[[2]],] %>% pull(sample))
+
+## Use the genes that are expressed in both conditions
+emat <-
+  ocflo.control.dat %>% 
+  filter(gene_name %in% ocflo.inf.dat$gene_name) %>% 
+  left_join(ocflo.inf.dat, by="gene_name") %>% 
+  as.data.frame()
+
+```
+
+### Run analyses
+
+Next, let's perform the DEG analyses for the ophio-cflo (halfway through infection v. controls)
+
+```{r run_DEG_anlayses}
+
+### Convert to a matrix
+
+# save gene names as row names
+rownames(emat) <- emat[,1]
+emat <- emat[,-1]
+# Need to make the emat into a matrix.
+emat <- data.matrix(emat)
+# log2 transform the data
+emat <- log2(emat + 1)
+
+
+### Set thresholds
+# Set threshold for q-value and log2FC
+q.threshold <- 0.05 # currently, using 5% FDR (BH adjusted p-value)
+log2.foldchange <- 1 # thus, any gene with a 2^(log2.foldchange) fold change in it's expression
+
+### Format the metadata, if necessary
+# Filter the metadata according to your comparison
+sm.sub <- sm %>% filter(cond %in% c(sampleName))
+# Define the cond column as a factor
+sm.sub$cond <- as.factor(sm.sub$cond)
+
+### Let's run the DEG analyses
+# Use the subsetted emat to find DEGs
+design.deg = model.matrix(~ cond + time_cos + time_sin, data = sm.sub)
+#
+fit = lmFit(emat, design.deg)
+fit = eBayes(fit, trend = TRUE)
+# Take a look at the coefficients table
+# fit$coefficients %>% head()
+#
+deLimma.deg = data.table(topTable(fit, coef = 2, number = Inf), keep.rownames = TRUE)
+setnames(deLimma.deg, 'rn', 'gene_name')
+deLimma.deg[, adj.P.Val := p.adjust(P.Value, method = 'BH')]
+setorderv(deLimma.deg, 'adj.P.Val')
+
+### Annotate the results
+# Annotate the results to indicate the significant genes
+all.DEGs <-
+  deLimma.deg %>% 
+  arrange(desc(abs(logFC)), adj.P.Val) %>% 
+  mutate(sig = as.factor(ifelse(adj.P.Val < q.threshold & abs(logFC) >= log2.foldchange, "yes", "no"))) %>% 
+  mutate(inf_v_control = as.factor(ifelse(sig=="yes", ifelse( logFC > 0, "up", "down" ), "NA"))) %>% 
+  mutate(inf = sampleName[[2]])
+
+### Summarize the results
+writeLines(paste0("\nControl-", sampleName[[1]], " v. ", sampleName[[2]], "\n--Results of DEG analysis--"))
+## How many DEGs - 5% FDR and ≥ 1 fold change in gene expression
+all.DEGs %>% 
+  # filter(adj.P.Val < q.threshold) %>%
+  # filter(abs(logFC) >= 2) %>% # change the criteria here for top DEG or all DEG (logFC≥1)
+  filter(sig == "yes") %>% 
+  
+  # pull(gene_name) %>% 
+  
+  group_by(inf_v_control) %>% 
+  summarise(n_genes = n()) %>% 
+  as.data.frame() %>% 
+    ## n = 81 up- and 141 down-regulated genes in Cflo heads during Ophio-infection 
+    ## (at 5% FDR; log2-fold-change ≥ 1) 
+  print()
+
+### Subset to keep only sig. DEGs
+sig.DEGs <- all.DEGs %>% filter(sig=="yes")
+
+```
+
+### Visualize results
+
+```{r visualize_DEG_res}
+
+# Volcano plot 
+library(viridis)
+
+ggplot(all.DEGs) +
+  # geom_hline(yintercept = -log10(0.05), col="red", alpha=0.6) +
+  # geom_vline(xintercept = c(-2,2), col="grey60", alpha=0.75) +
+  geom_point(aes(x = logFC, y = -log10(adj.P.Val), color=sig), size = 1.5, alpha = 0.5) +
+  labs(x = expression(log[2]*' fold-change (inf_v_control)'), 
+       y = expression(-log[10]*' '*q[DE]),
+       title = "O.cflo (infection v. control)",
+       color = "significant") +
+  # scale_x_continuous(limits = c(-5,3),
+  #                    breaks = c(-5,-4,-3,-2,-1,0,1,2,3),
+  #                    labels = c("-5","","-3","","-1","","1","","3")) +
+  # xlim(c(-50,50)) +
+  theme_Publication() +
+  scale_color_viridis(discrete = T, direction = -1, option = "viridis")
+  
+  
+```
+
+
+### Load manip data
+
+```{r will2020_data}
+
+## Load the ophio DEG (at manipulation) data from Will et al. 2020
+will2020_data <- read.csv(paste0(path_to_repo,"/data/input/ophio_cflo/complete_annotations/FullBlast_EC05_RNAseq_orignal_copy_26Aug19.csv"), stringsAsFactors = F)
+will2020_data %<>% 
+  as_tibble() %>% 
+  filter(sample_1=="Alive" & sample_2=="Fungus") %>%
+  select(arb2_gene, logFC = log2.fold_change., q_value, significant) %>% 
+  mutate(logFC=as.numeric(logFC), q_value=as.numeric(q_value)) %>%
+  filter(significant=="yes") %>% 
+  mutate(up_down = ifelse(logFC > 0, "down", "up")) %>%
+  mutate(logFC = -1*logFC) %>% 
+  na.omit()
+
+### Change ophio gene names to ncbi IDs
+will2020_data %<>% 
+  left_join(ocflo.annots[1:3], by=c("arb2_gene"="gene_ID_robin")) %>%
+  select(-1) %>% 
+  select(gene_name, blast_annot, everything())
+  
+```
+
+## 5. Overlap between DEGs during infection v. manipulation
+
+```{r DEG_inf_manip}
+
+### Subset the up/down-regulated genes
+### At halfway-through disease progression
+inf.up <- sig.DEGs %>% filter(inf_v_control=="up") %>% pull(gene_name)
+inf.down <- sig.DEGs %>% filter(inf_v_control=="down") %>% pull(gene_name)
+### At active manipulation
+manip.up <- will2020_data %>% filter(up_down=="up") %>% pull(gene_name)
+manip.down <- will2020_data %>% filter(up_down=="down") %>% pull(gene_name)
+
+
+### Visualize the results
+listInput <- list(inf.up, inf.down, manip.up, manip.down)
+names(listInput) <- c(paste0("inf_",c("up","down")), paste0("manip_", c("up","down")))
+    
+library(UpSetR)
+library(viridis)
+upset(fromList(listInput), 
+  number.angles = 0, point.size = 3, line.size = 1.5, 
+  mainbar.y.label = "Number of overlapping genes", 
+  sets.x.label = "Sig. DE genes", 
+  text.scale = c(1.5, # y-axis label ("# overlapping genes")
+                 2, # y-axis tick labels ("1000, 2000,..")
+                 1.5, # label for histogram ("sig. rhy genes")
+                 1, # tick labels for histogram
+                 1.5, # set names ("Cflo-brain_08h,..") 
+                 1.5),
+  sets = names(listInput),
+  nintersects = 15,
+  keep.order = T,
+  sets.bar.color = viridis(1),
+  # adding queries
+  query.legend = "bottom"
+  ) %>% 
+print()
+
+
+### Test significance of overlap
+list1 <- list(inf.up, inf.down)
+names(list1) <- paste0("inf_",c("up","down"))
+list2 <- list(manip.up, manip.down)
+names(list2) <- paste0("manip_", c("up","down"))
+bg.genes <- all.DEGs %>% nrow()
+
+overlap <- check_overlap(list1, list2, bg.genes)
+
+```
+

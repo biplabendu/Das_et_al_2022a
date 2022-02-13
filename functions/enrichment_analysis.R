@@ -400,6 +400,49 @@ go_enrichment_plot <- function(data,
   return(goplot)
 }
 
+# 4. Checking sig. overlap ----------------------------------------------
+
+check_overlap <- function(list1, # first list of genesets
+                          list2, # second list of genesets that will be compared to list1 in a pair-wise manner
+                          tot_genes, # list of all genes or its length to be used as a background
+                          text.col = "grey60",   
+                          function.dir = ".",
+                          fdr=5) {
+  
+  ## CHECK FOR OVERLAP
+  pacman::p_load(GeneOverlap)
+  
+  # how many genes are there in Cflo genome
+  nGenesCflo = as.numeric(ifelse(is.character(tot_genes),length(tot_genes),tot_genes))
+  
+  ## make a GOM object
+  gom <- newGOM(list1, list2, genome.size = nGenesCflo)
+  
+  gom.plot <- drawHeatmap(gom,
+                          adj.p=T,
+                          cutoff=(fdr/100),
+                          what="odds.ratio",
+                          # what="Jaccard",
+                          log.scale = T,
+                          note.col = text.col)
+  
+  print(gom.plot)
+  
+  gom.stats <- list()
+  
+  # length of genesets in each list
+  gom.stats[[1]] <- c(lapply(list1, length) %>% unlist(), lapply(list2, length) %>% unlist())
+  
+  # stats from running GeneOverlap
+  gom.stats[[2]] <- getMatrix(gom, name = "intersection")
+  gom.stats[[3]] <- getMatrix(gom, name = "odds.ratio")
+  gom.stats[[4]] <- getMatrix(gom, name = "pval")
+  names(gom.stats) <- c("length.geneset","intersection","odds.ratio","pval")
+  
+  return(gom.stats)
+  print(gom.stats)
+  
+}
 
 # # 3. Plotting heat maps ------------------------------------------------------
 # 

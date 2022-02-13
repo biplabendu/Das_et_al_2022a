@@ -1,0 +1,388 @@
+---
+title: "Compare fungal GCNs (ophio-cflo v. rest (TC6)"
+author: Biplabendu Das
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: united
+    keep_md: no
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = F)
+knitr::opts_chunk$set(message = F)
+
+## For more inspiration on customizing the html output, refer to the following:
+# https://bookdown.org/yihui/rmarkdown/html-document.html#table-of-contents
+
+```
+
+```{r housekeeping, include=FALSE}
+set.seed(420)
+rm(list = ls())
+
+#' Load the libraries
+pacman::p_load(pheatmap, dendextend, tidyverse, viridis)
+pacman::p_load(RSQLite, tidyverse, dbplyr, DT, conflicted, WGCNA, igraph)
+pacman::p_load(patchwork)
+
+#' set conflict preference
+conflict_prefer("select", "dplyr")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("layout", "plotly")
+conflict_prefer("hclust", "flashClust")
+conflict_prefer("simplify", "igraph")
+
+#' set path to your working directory
+path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a"
+
+# script name
+script.name = "02_compare_GCN_ophio_beau"
+
+#' load functions
+# customized theme for publication quality figures
+source(paste0(path_to_repo,"/functions/theme_publication.R"))
+# function to perform enrichment analysis
+source(paste0(path_to_repo,"/functions/enrichment_analysis.R"))
+# function to plot z-scores (Cflo genes only)
+source(paste0(path_to_repo,"/functions/plot_zscores.R"))
+
+```
+
+## Overview/Goals
+
+Compare the gene co-expression networks of Ophiocordyceps camponoti-floridani (Ocflo) and Ophiocordyceps kimflemingae (Okim) to:
+
+- identify the modules that are highly conserved
+- identify the modules that show no evidence for preservation
+
+## Step 1: Identify the homologous genes
+
+### 1.1 Load data
+
+(A)
+Goal: Load the homology data between O.cflo and O.kim, and filter to keep the one-to-one homologs only.
+
+Dataset: Annotation file for Ocflo; contains the Okim homologs for Ocflo genes identified using blast.
+
+>arb2 = O.cflo; sc16a = O.kim
+
+- There are 7455 distinct arb2 genes in the file.
+- There are 6981 distinct (arb2, sc16a) maps, and multiple arb2 genes might have the same sc16a homolog.
+- Get rid of the duplicates (**NEED TO JUSTIFY**); because we need to have a one-to-one mapping for O.cflo and O.kim genes for WGCNA to work without any issues.
+- 6459 O.cflo genes have only one O.kim homolog; these 6459 genes will be used for further data cleanup and testing for module preservation.
+
+```{r load_data_v1}
+
+# Read the source file
+file.name <- "FullBlast_EC05_RNAseq_orignal_copy_26Aug19.csv"
+homology.dat <- 
+  paste0(path_to_repo, "/data/will_et_al_2020/", file.name) %>% 
+  read.csv(., stringsAsFactors = F, na.strings = c(" ","","NA"))
+
+# Clean the source file to keep distinct gene-gene homologs
+homology.dat <-
+  homology.dat %>% 
+  # names() %>% 
+  select(arb2_gene, sc16a_gene) %>% 
+  na.omit() %>% 
+  distinct() %>% 
+  group_by(sc16a_gene) %>% 
+  filter(n()==1)
+
+# The above names are NOT NCBI names, so let's create a separate table that contains the same
+# information, but with NCBI names.
+
+ocflo.names <- 
+  paste0(path_to_repo,"/functions/func_data/ophio_cflo_annots_robin_ncbi.csv") %>% 
+  read.csv(stringsAsFactors = F, na.strings = c(""," ","NA")) %>% 
+  select(arb2_gene, arb2_gene_ncbi = gene_name) %>% 
+  distinct()
+okim.names <-
+  paste0(path_to_repo,"/functions/func_data/ophio_kim_annots_robin_ncbi.csv") %>% 
+  read.csv(stringsAsFactors = F, na.strings = c(""," ","NA")) %>% 
+  select(sc16a_gene, sc16a_gene_ncbi = gene_name) %>% 
+  distinct()
+   
+homology.dat.ncbi <-
+  homology.dat %>% 
+  left_join(ocflo.names, by="arb2_gene") %>% 
+  left_join(okim.names, by = "sc16a_gene") %>%
+  select(3:4) %>% 
+  na.omit() # NOTE: Some of the arb2_genes do not have a ncbi gene homolog
+
+```
+
+
+(B)
+Goal: Load the expression (FPKM) data for O.kim and O.cflo, and identify the "expressed" genes
+
+- For O.cflo, 6874/7455 genes are expressed (≥1 FPKM expression for ≥6 timepoints in the day)
+- Among the 6874 exp. genes, only 6014 have a okim homolog.
+
+- For O.kim, 7864/8577 genes are expressed
+- Among the 7864 exp. genes, only 6012 have a ocflo homolog.
+
+```{r load_data_v2}
+
+# loading database which contains data for Das and de Bekker 2022, from GitHub
+db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_data.db"))
+
+# specify sample name
+sample.name <- c("ophio_cflo","ophio_kim")
+
+# O.cflo - Expressed
+#
+# extract the (gene-expr X time-point) data
+ocflo.dat <-
+  db %>%
+  tbl(., paste0(sample.name[1] ,"_fpkm")) %>%
+  select(gene_name, everything()) %>%
+  collect()
+# count the number of time points that has ≥ 1 FPKM
+n.expressed <- apply(ocflo.dat[-1], 1, function(x) sum(x >= 1))
+# subset the data and only keep the filtered genes
+ocflo.dat <- ocflo.dat[which(n.expressed >=6),]
+#
+# NEED TO THINK
+# filter and keep only the ocflo genes with a okim homolog
+ocflo.dat <- 
+  ocflo.dat %>%
+  filter(gene_name %in% homology.dat.ncbi$arb2_gene_ncbi)
+  
+
+# O.kim - Expressed + Subset
+#
+# extract the (gene-expr X time-point) data
+okim.dat <-
+  db %>%
+  tbl(., paste0(sample.name[2] ,"_fpkm")) %>%
+  select(gene_name, everything()) %>%
+  collect()
+# count the number of time points that has ≥ 1 FPKM
+n.expressed <- apply(okim.dat[-1], 1, function(x) sum(x >= 1))
+# subset the data and only keep the filtered genes
+okim.dat <- okim.dat[which(n.expressed >=6),]
+#
+# NEED TO THINK
+# filter and keep only the ocflo genes with a okim homolog
+okim.dat <-
+  okim.dat %>%
+  # filter(gene_name %in% homology.dat.ncbi$sc16a_gene_ncbi) %>% 
+  left_join(homology.dat.ncbi[-1], by = c("gene_name" = "sc16a_gene_ncbi")) %>% 
+  filter(arb2_gene_ncbi %in% ocflo.dat$gene_name) %>% 
+  select(-gene_name) %>% 
+  select(gene_name = arb2_gene_ncbi, everything())
+
+# O.cflo - Subset
+#
+# Finally, filter to only work with these 5850 genes
+ocflo.dat <- 
+  ocflo.dat %>% 
+  filter(gene_name %in% okim.dat$gene_name)
+
+```
+
+> Note, there might be an error due to the mismatch between the lengths of the two datasets.
+
+### 1.2 Format the data
+
+```{r format_data}
+
+# We work with two sets:
+nSets = 2;
+# For easier labeling of plots, create a vector holding descriptive names of the two sets.
+setLabels = c("Ocflo", "Okim")
+shortLabels = c("arb2", "sc16a")
+
+# Form multi-set expression data: columns starting from 9 contain actual expression data.
+multiExpr = vector(mode = "list", length = nSets)
+
+multiExpr[[1]] = list(data = as.data.frame(t(log2(ocflo.dat[-c(1)]+1))));
+names(multiExpr[[1]]$data) = ocflo.dat$gene_name;
+rownames(multiExpr[[1]]$data) = names(ocflo.dat)[-c(1)];
+multiExpr[[2]] = list(data = as.data.frame(t(log2(okim.dat[-c(1)]+1))));
+names(multiExpr[[2]]$data) = okim.dat$gene_name;
+rownames(multiExpr[[2]]$data) = names(okim.dat)[-c(1)];
+# Check that the data has the correct format for many functions operating on multiple sets:
+exprSize = checkSets(multiExpr)
+
+# Check that all genes and samples have sufficiently low numbers of missing values.
+gsg = goodSamplesGenesMS(multiExpr, verbose = 3);
+writeLines("All samples okay?")
+gsg$allOK
+
+# Use the following code to check the data
+# multiExpr[[1]]$data[,1:3]
+
+```
+
+
+### 1.3 Check samples
+
+```{r check_samples}
+# We now cluster the samples on their Euclidean distance, separately in each set.
+
+sampleTrees = list()
+for (set in 1:nSets) {
+  sampleTrees[[set]] = hclust(dist(multiExpr[[set]]$data), method = "average")
+}
+
+
+# png(file = paste0(path_to_repo,"/results/temp_files/Plots/TC6_SampleClustering.png"), 
+#     width = 20, height = 30, units = "cm", res = 300)
+par(mfrow=c(1,2))
+# par(mar = c(0, 4, 2, 0))
+for (set in 1:nSets)
+  plot(sampleTrees[[set]], main = paste("Sample clustering on all genes in", setLabels[set]),
+       xlab="", sub="", cex = 0.7)
+# dev.off()
+
+# Define data set dimensions
+nGenes = exprSize$nGenes
+nSamples = exprSize$nSamples
+
+# save(multiExpr, 
+#      # Traits, 
+#      nGenes, nSamples, setLabels, shortLabels, exprSize,
+#      file = "TC6_Consensus-dataInput.RData")
+
+
+```
+
+### 1.4 Module preservation
+
+#### Prep data
+
+- Load/Prep the expression data for Ocflo and Okim
+- Load/Prep the module identity for each Ocflo gene
+- Run the modulePreservation function & save the result
+
+```{r prep_data}
+
+# # Load the data saved in the first part
+# load(file = "./tutorial/TC5_Consensus-dataInput.RData");
+# # Load the results of network analysis, tutorial part 2.a
+# load(file = "./tutorial/TC5_Consensus-NetworkConstruction-man.RData");
+
+# Expression data
+setLabels = c("Ocflo", "Okim")
+multiExpr_1 = list(arb2 = list(data = multiExpr[[1]]$data), sc16a = list(data = multiExpr[[2]]$data));
+
+# module identity for arb2 gene
+## specify the location of the csv that has this info.
+file_loc <- "/results/networks/ophio_cflo_gene_IDs_and_module_identity.csv"
+
+## load it into R
+mod.identity.ocflo <- read.csv(paste0(path_to_repo,file_loc), stringsAsFactors = F) 
+  # there are 6874 genes in the original network that were classified into 16 modules
+
+## filter to keep only the genes that we are working with
+which.genes <- multiExpr[[1]]$data %>% colnames()
+mod.identity.ocflo <- 
+  mod.identity.ocflo %>% 
+  filter(gene_ID_ncbi %in% which.genes) %>% 
+  select(gene_ID_ncbi, module_identity) %>% 
+  arrange(gene_ID_ncbi) # !!this step is necessary!!
+  
+## specify the module identity of the genes
+moduleColors <- mod.identity.ocflo %>% pull(module_identity)
+multiColor = list(arb2 = moduleColors);
+
+```
+
+#### Run modulePreservation
+
+```{r}
+## Run module preservation function
+# mp = modulePreservation(multiExpr_1, multiColor,
+#                           referenceNetworks = 1,
+#                           nPermutations = 200,
+#                           calculateQvalue = TRUE,
+#                           randomSeed = 1,
+#                           quickCor = 0,
+#                           verbose = 3)
+# 
+# 
+# save(mp, file = paste0(path_to_repo, "/results/temp_files/modulePreservation_arb2_sc16a.RData"));
+
+## or load the results for faster access
+load(file = paste0(path_to_repo, "/results/temp_files/modulePreservation_arb2_sc16a.RData"));
+
+```
+
+
+#### Plot results
+
+```{r }
+ref = 1
+test = 2
+statsObs = cbind(mp$quality$observed[[ref]][[test]][, -1], mp$preservation$observed[[ref]][[test]][, -1])
+statsZ = cbind(mp$quality$Z[[ref]][[test]][, -1], mp$preservation$Z[[ref]][[test]][, -1]);
+
+# Compare preservation to quality:
+z.stats <- cbind(statsObs[, c("medianRank.pres", "medianRank.qual")],
+             signif(statsZ[, c("Zsummary.pres", "Zsummary.qual")], 2)) 
+z.stats$module_name <- rownames(z.stats)
+
+# z.stats[z.stats$Zsummary.pres>30,]
+
+# Module labels and module sizes are also contained in the results
+modColors = rownames(mp$preservation$observed[[ref]][[test]])
+moduleSizes = mp$preservation$Z[[ref]][[test]][, 1];
+
+# leave grey and gold modules out
+plotMods = !(modColors %in% c("grey","gold"));
+
+# Text labels for points
+text = modColors[plotMods];
+
+# Auxiliary convenience variable
+plotData = cbind(mp$preservation$observed[[ref]][[test]][, 2], mp$preservation$Z[[ref]][[test]][, 2])
+
+# Plot
+mains = c("Preservation Median rank", "Preservation Zsummary");
+# sizeGrWindow(10, 5);
+par(mfrow = c(1,2))
+par(mar = c(4.5,4.5,2.5,1))
+for (p in 1:2)
+{
+  min = min(plotData[, p], na.rm = TRUE);
+  max = max(plotData[, p], na.rm = TRUE);
+  # Adjust ploting ranges appropriately
+  if (p==2)
+  {
+    if (min > -max/10) min = -max/10
+    ylim = c(min - 0.1 * (max-min), max + 0.1 * (max-min))
+  } else
+    ylim = c(max + 0.1 * (max-min), min - 0.1 * (max-min))
+  plot(moduleSizes[plotMods], plotData[plotMods, p], col = 1, bg = modColors[plotMods], pch = 21,
+       main = mains[p],
+       cex = 2.5,
+       alpha=0.75,
+       ylab = mains[p], xlab = "Module size", log = "x",
+       ylim = ylim,
+       xlim = c(1, 4000), cex.lab = 1.2, cex.axis = 1.2, cex.main =1.4)
+  if(p==1)
+    text(moduleSizes[plotMods], plotData[plotMods, p], labels=modColors[plotMods], cex=0.75, font=0.75, pos=1)
+  if (p==2) {
+    abline(h=0)
+    abline(h=c(2,10), col = "darkred", lty = 2)
+    # abline(h=10, col = "darkgreen", lty = 2)
+    # abline(h=30, col = "darkred", lty=2)
+  } }
+```
+
+NOTES:
+
+- Looking into the WGCNA [tutorial](https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/ModulePreservation/Tutorials/HumanChimp.pdf), it seems that the gold module contains a random sample of 1000 genes, "The “gold” module consists of 1000 randomly selected genes that represent a sample of the whole network".
+
+
+-------------------------------------------------------------------------------------
