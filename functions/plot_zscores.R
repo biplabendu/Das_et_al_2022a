@@ -1038,13 +1038,15 @@ stacked.zplot_tc6 <-
     source(paste0(path_to_repo,"/functions/theme_publication.R"))
     
     ## load databases (TC7)
-    ## 1. TC7_ejtk.db
+    ## 1. TC6_fungal_ejtk.db
     ejtk.db <- dbConnect(RSQLite::SQLite(),
                          paste0(path_to_repo, "/data/databases/TC6_fungal_ejtk.db")) #### CHANGE HERE ####
-    ## 2. TC7_data.db
+    ## 2. TC6_fungal_data.db
     data.db <- dbConnect(RSQLite::SQLite(),
                          paste0(path_to_repo, "/data/databases/TC6_fungal_data.db")) #### CHANGE HERE ####
-    
+    ## 3. TC7_data.db         # for ophio expression data during infection
+    inf.db <- dbConnect(RSQLite::SQLite(),
+                        paste0(path_to_repo,"/../Das_et_al_2022b/data/databases/TC7_data.db"))
     
     ## PREP THE DATASETS ##
     
@@ -1053,10 +1055,14 @@ stacked.zplot_tc6 <-
     
     ## Read the zscores for all conditions
     # specify sample name
-    sample.name <- c("beau", "ophio_cflo") #### CHANGE HERE ####
+    sample.name <- c("beau", "ophio_cflo", "ophio_ophio-infected") #### CHANGE HERE ####
     zscore.dat <- list()
     for (i in 1:length(sample.name)){
-      zscore.dat[[i]] <- data.db %>% tbl(., paste0(sample.name[i],"_zscores")) %>% collect()
+      if (i == 3){
+        zscore.dat[[i]] <- inf.db %>% tbl(., paste0(sample.name[i],"_zscores")) %>% collect()
+      } else {
+        zscore.dat[[i]] <- data.db %>% tbl(., paste0(sample.name[i],"_zscores")) %>% collect()
+      }
     }
     
     # # load the core datasets
@@ -1075,7 +1081,7 @@ stacked.zplot_tc6 <-
     ## Specify color scheme
     # col.scheme <- c("#B9BBC8","#AD212F","#5A829F")
     # col.scheme <- c("grey60","#AD212F","#5A829F")
-    col.scheme <- c("#5A829F", "#AD212F")
+    col.scheme <- c("#5A829F", "#AD212F", "#5C2849")
     # col.scheme <- c("grey50","#AD212F","#3B758C")
     
     ## Specify different samples
@@ -1105,10 +1111,16 @@ stacked.zplot_tc6 <-
       col.scheme <- col.scheme[2]
       conds <- conds[2]
       
-    # } else if (cond == "beau" | cond == "beau-inf" | cond == "b"){
-    #   dummy <- dummy.beau
-    #   col.scheme <- col.scheme[3]
-    #   conds <- conds[3]
+    } else if (cond == "inf" | cond == "inf_ophio_cflo" | cond == "ophio_ophio-infected"){
+      dummy <- 
+        zscore.dat[[3]] %>%
+        filter(gene_name %in% g) %>% 
+        gather(ZT, zscore, -1) %>% 
+        arrange(match(gene_name, g)) %>% 
+        mutate(cond = sample.name[[3]]) %>% 
+        mutate(ZT = readr::parse_number(ZT))
+      col.scheme <- col.scheme[3]
+      conds <- conds[3]
       
     # } else if (cond == "all" | cond == "tc6" | cond == "TC6" | cond == "ab") {
     #   dummy <- rbind(dummy.beau, dummy.ocflo)

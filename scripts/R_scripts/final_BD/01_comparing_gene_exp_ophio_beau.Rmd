@@ -63,7 +63,7 @@ source(paste0(path_to_repo,"/functions/plot_zscores.R"))
 ## specify sample name
 sample.name <- c("beau", "ophio_cflo", "ophio_kim")
 ## color scheme for the samples
-col.scheme <- c("#5A829F", "#AD212F", "black")
+col.scheme <- c("#5A829F", "#AD212F", "black", "#5C2849")
 
 # SCRIPT NAME
 ## specify the name of the script (folder) where figures will be saved
@@ -196,22 +196,6 @@ for (i in 1:2) {
 - Identify the day-peaking and night-peaking clusters visually.
 
 ```{r clustering_24h}
-
-# Choose period
-period = '24'
-
-## 
-rhy <- list()
-for (i in 1:2) {
-  rhy[[i]] <-
-    tbl(ejtk.db, paste0(sample.name[[i]],"_zscores_",period,'h')) %>%
-    filter(GammaP < gamma.pval) %>%
-    select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
-    select(ID) %>% pull()
-  
-  # How many genes are rythmic?
-  writeLines(paste0("n(rhythmic-",period, "h) in ", sample.name[[i]], " : ", length(rhy[[i]])))
-}
 
 ## initialise lists to hold input and output of the hierarchical clustering
 zscore.dat <- list() # zscore data (input)
@@ -690,6 +674,8 @@ pheatmap(zscore.rhy.homology.dat, show_rownames = F, show_colnames = F,
 
 ```{r ortho_rhy_zplots}
 
+sampleName <- c("ophio_cflo","ophio_ophio-infected")
+
 for (j in 1:2) {
   
   for (i in 1:n_clusters){
@@ -760,11 +746,21 @@ for (j in 1:2) {
       #                                sample.name[[1]],"_Cluster_",i,".txt"))
         
     }
+    
     # Stacked zplot
+    if (j==2) {
+      # Stacked zplot
+      stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]]) %>% pluck(1)
+      stacked.plot2 <- genes %>% stacked.zplot_tc6(cond = sampleName[[2]]) %>% pluck(1)
+      ggpubr::ggarrange(plotlist=list(stacked.plot1, stacked.plot2),
+                    nrow = 1, ncol = 2,
+                    widths = c(1,1), labels = NA) %>% 
+        print()
+    } else {
     genes %>% 
     stacked.zplot_tc6(cond = sample.name[[j]]) %>% 
       multi.plot(rows = 1, cols = 1)
-    
+    }
   }
 }
 
@@ -1232,3 +1228,176 @@ overlap <- check_overlap(list1, list2, bg.genes)
 
 ```
 
+## 6. Daily exp (DEGs at inf)
+
+Let's plot the daily expression of the DEGs (ocflo controls v. during infection)
+
+```{r DEGs_stacked_zplot}
+
+inf.down %>% 
+  # stacked.zplot_tc6(cond = "inf")
+  stacked.zplot_tc6(cond = "ophio")
+
+```
+
+
+### Clustering of DEGs
+
+- perform hierarchical clustering of DE genes into four clusters;
+- plot time-course heatmaps for the clustered 24h-rhythmic geneset
+- Identify the day-peaking and night-peaking clusters visually.
+
+```{r clustering_degs}
+
+## Get the ocflo infection timecourse data (zscores)
+zscore.inf.dat <- inf.db %>% tbl(., paste0(sampleName[[2]], "_zscores")) %>% collect()
+colnames(zscore.inf.dat)[-1] <- paste0("ZT",meta[meta$cond==sampleName[[2]],] %>% pull(sample))
+
+## Specify parameters
+n_clusters <- 4
+which.degs <- list(inf.up, inf.down, manip.up, manip.down)
+names(which.degs) <- c("inf.up", "inf.down", "manip.up", "manip.down")
+  
+for (i in 1:length(which.degs)) {
+    
+    ## Which genes to look at?
+    
+    # which.genes <- c(inf.up,inf.down)
+    which.genes <- which.degs[[i]]
+    
+    ### Make the dataframe for plotting
+    zscore.deg.dat <-
+      zscore.dat[[2]] %>% 
+      filter(gene_name %in% which.genes) %>% 
+      # add data from infection
+      left_join(zscore.inf.dat, by="gene_name") %>% 
+      # drop any genes without expression values (NA)
+      na.omit() %>% 
+      as.data.frame() %>% 
+      # set genes as rownames
+      column_to_rownames("gene_name")
+    
+    # Set genes as rownames and convert it into a matrix
+    # rownames(zscore.rhy.homology.dat) = zscore.rhy.homology.dat$gene_name
+    zscore.deg.dat <- as.matrix(zscore.deg.dat)
+    
+    # Hierarchical clustering of the genesets
+    my_hclust_gene <- hclust(dist(zscore.deg.dat), method = "complete")
+    
+    # Make annotations for the heatmaps
+    my_clusters <- cutree(tree = as.dendrogram(my_hclust_gene), k = n_clusters) # k= number of clusters
+    my_gene_col <- data.frame(cluster = my_clusters)
+    
+    
+    # I’ll add some column annotations and create the heatmap.
+    # Annotations for:
+    # 1. Is the sample collected during the light or dark phase? 
+    my_sample_col <- data.frame(phase = rep(rep(c("light", "dark", "light"),c(5,6,1)),2),
+                                conds = rep(c("ocflo_controls", "ocflo_infection"), each=12))
+    row.names(my_sample_col) <- colnames(zscore.deg.dat)
+    
+    # Manual color palette
+    my_colour = list(
+      phase = c(light = "#F2E205", dark = "#010440"),
+      conds = c(ocflo_controls = col.scheme[[2]], ocflo_infection = col.scheme[[4]]),
+      cluster = viridis::cividis(100)[c(10,90,60,30)]) #### NEED TO CHANGE #### account for n_clusters
+    
+    # Color scale
+    my.breaks = seq(min(zscore.deg.dat), max(zscore.deg.dat), by=0.1)
+    # my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.06)
+    
+    # Let's plot!
+    pheatmap(zscore.deg.dat, show_rownames = F, show_colnames = F,
+               annotation_row = my_gene_col, 
+               annotation_col = my_sample_col,
+               cutree_rows = n_clusters, # OG was 4
+               cutree_cols = 2,
+               annotation_colors = my_colour,
+               border_color=FALSE,
+               cluster_cols = F,
+               breaks = my.breaks,
+               ## color scheme borrowed from: 
+               color = inferno(length(my.breaks) - 1),
+               # treeheight_row = 0, 
+               # treeheight_col = 0,
+               # remove the color scale or not
+               main = paste0("DEGs - ",names(which.degs)[[i]], "\n (n=",nrow(zscore.deg.dat), " genes)"),
+               ## annotation legend
+               annotation_legend = T,
+               ## Color scale
+               legend = T) %>% 
+      print() 
+    
+    
+    for (j in 1:n_clusters){
+    
+    writeLines(paste0("Which DEGs: ", names(which.degs)[[i]], "\n", "Cluster: ", j))
+    
+    # Summary
+    genes <- my_gene_col %>% rownames_to_column("g") %>% filter(cluster==as.character(j)) %>% pull(g)
+    writeLines(paste0("n(genes) = ", length(genes),"\n"))
+    
+    # define the background geneset for enrichment analysis
+    bg.genes <- all.DEGs %>% pull(gene_name)
+    
+    # Enrichment
+    overrepresented.terms <-
+      genes %>% 
+        go_enrichment(.,
+                      function.dir = path_to_repo,
+                      org = sampleName[[1]],
+                      bg = bg.genes) %>% 
+        filter(adj_pVal < FDR/100) %>% 
+        filter(over_under == "over")
+    writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
+    
+    # Enriched terms word-cloud (borrowed from: https://towardsdatascience.com/create-a-word-cloud-with-r-bde3e7422e8a)
+    if (nrow(overrepresented.terms)>2){
+      # load libraries
+      pacman::p_load(tm, wordcloud, RColorBrewer, wordcloud2)
+      # get text as a character vector
+      text <- overrepresented.terms %>% pull(GO_desc)
+      # load your text data as a corpus
+      docs <- Corpus(VectorSource(text)) # requires library "tm"
+      # clean text (necessary?)
+      docs <- docs %>%
+                tm_map(removeNumbers) %>%
+                tm_map(removePunctuation) %>%
+                tm_map(stripWhitespace)
+      docs <- tm_map(docs, content_transformer(tolower))
+      docs <- tm_map(docs, removeWords, c("process", "molecular","cellular",
+                                          "component", "compound", "part",
+                                          "activity", "acid"
+                                          ))
+      # create document-term-matrix
+      dtm <- TermDocumentMatrix(docs) 
+      matrix <- as.matrix(dtm) 
+      words <- sort(rowSums(matrix),decreasing=TRUE) 
+      df <- data.frame(word = names(words),freq=words)
+      # generate word-cloud
+      wordcloud::wordcloud(words = df$word, freq = df$freq, min.freq = 2,
+                max.words=200, random.order=FALSE, rot.per=0,
+                scale=c(4,0.15),
+                # colors=brewer.pal(8, "Dark2")
+                colors=col.scheme[[2]]
+                )
+      
+      # ## save overrepresented GO terms for REVIGO analyses
+      #   overrepresented.terms %>% select(GO, adj_pVal) %>% 
+      #     readr::write_tsv(., paste0(path_to_repo,"/results/go_temp_files/",
+      #                                sample.name[[1]],"_Cluster_",i,".txt"))
+        
+    }
+    # Stacked zplot
+    stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]]) %>% pluck(1)
+    stacked.plot2 <- genes %>% stacked.zplot_tc6(cond = sampleName[[2]]) %>% pluck(1)
+    ggpubr::ggarrange(plotlist=list(stacked.plot1, stacked.plot2),
+                  nrow = 1, ncol = 2,
+                  widths = c(1,1), labels = NA) %>% 
+      print()
+    
+  }
+ 
+}
+
+```
