@@ -238,8 +238,8 @@ for (i in 1:2) {
   
   # Manual color palette
   my_colour = list(
-    phase = c(light = "#F2E205", dark = "#010440"),
-    cluster = viridis::cividis(100)[c(10,90,60,30)]) #### NEED TO CHANGE #### account for n_clusters
+    phase = c(light = "#F2E18D", dark = "#010440"),
+    cluster = viridis::cividis(100)[c(seq(10,80,by=round(80/(n_clusters), 0)))])
   
   # Color scale
   my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.1)
@@ -251,14 +251,14 @@ for (i in 1:2) {
              annotation_row = my_gene_col[[i]], 
              annotation_col = my_sample_col,
              cutree_rows = n_clusters, # OG was 4
-             cutree_cols = 2,
+             # cutree_cols = 2,
              annotation_colors = my_colour,
              border_color=FALSE,
              cluster_cols = F,
              breaks = my.breaks,
              ## color scheme borrowed from: 
              color = inferno(length(my.breaks) - 1),
-             # treeheight_row = 0, 
+             treeheight_row = 0,
              # treeheight_col = 0,
              # remove the color scale or not
              main = paste0(sample.name[[i]], " 24h-rhythmic \n (n=", nrow(zscore.rhy), " genes)"),
@@ -334,16 +334,18 @@ for(i in 1:length(l.phases)) {
     
   g[[i]] <-
     ggplot(df.test, aes(x=factor(phase), y=n_genes)) + 
+    # indicate light-dark phase
+    geom_rect(aes(xmin = as.factor(12), xmax = as.factor(24), ymin = -Inf, ymax = Inf),
+              fill = "grey80", alpha = 0.05, color=NA) +
     geom_bar(stat='identity', fill=col.scheme[[i]]) +
     
     xlab(c(names(l.phases)[i])) +
     
-    scale_y_continuous(breaks = c(0,200,400,600)) +
+    scale_y_continuous(breaks = c(0,300,600), limits = c(0,700)) +
     
     coord_polar() +
-    theme_Publication() +
-    theme(text = element_text(size = 15, colour = 'black'),
-              # axis.title.x=element_blank(),
+    theme_Publication(base_size = 20) +
+    theme(# axis.title.x=element_blank(),
               # axis.text.x=element_blank(),
               legend.position = "none")
     #ggtitle(paste0("Dataset: ", names(l.phases)[i])) 
@@ -538,7 +540,7 @@ homology.dat <-
   select(beau_gene, ophio_gene)
 
 writeLines(paste("Of the", length(expressed[[2]]), "genes expressed in Ophio-cflo,",
-                 "and", length(expressed[[1]]), "genes expressed in Beau",
+                 "and", length(expressed[[1]]), "genes expressed in Beau,\n",
                  nrow(homology.dat), "genes show one-to-one orthology"))
 
 ```
@@ -637,9 +639,9 @@ row.names(my_sample_col) <- colnames(zscore.rhy.homology.dat)
 
 # Manual color palette
 my_colour = list(
-  phase = c(light = "#F2E205", dark = "#010440"),
+  phase = c(light = "#F2E18D", dark = "#010440"),
   conds = c(beau = "#5A829F", ophio_cflo = "#AD212F"),
-  cluster = viridis::cividis(100)[c(10,90,60,30)]) #### NEED TO CHANGE #### account for n_clusters
+  cluster = viridis::cividis(100)[c(seq(10,80,by=round(80/(n_clusters), 0)))])
 
 # Color scale
 my.breaks = seq(min(zscore.rhy.homology.dat), max(zscore.rhy.homology.dat), by=0.1)
@@ -650,17 +652,18 @@ pheatmap(zscore.rhy.homology.dat, show_rownames = F, show_colnames = F,
            annotation_row = my_gene_col, 
            annotation_col = my_sample_col,
            cutree_rows = n_clusters, # OG was 4
-           cutree_cols = 4,
+           # cutree_cols = 4,
+           gaps_col = c(12,24),
            annotation_colors = my_colour,
            border_color=FALSE,
            cluster_cols = F,
            breaks = my.breaks,
            ## color scheme borrowed from: 
            color = inferno(length(my.breaks) - 1),
-           # treeheight_row = 0, 
+           treeheight_row = 0,
            # treeheight_col = 0,
            # remove the color scale or not
-           main = paste0("24h-rhythmic \n (n=",
+           main = paste0("24h-rhythmic in Ocflo or Beau \n (n=",
                          nrow(zscore.rhy.homology.dat), " orthologous genes)"),
            ## annotation legend
            annotation_legend = T,
