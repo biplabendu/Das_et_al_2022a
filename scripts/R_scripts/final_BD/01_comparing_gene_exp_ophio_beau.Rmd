@@ -62,6 +62,8 @@ source(paste0(path_to_repo,"/functions/plot_zscores.R"))
 # SAMPLE NAME
 ## specify sample name
 sample.name <- c("beau", "ophio_cflo", "ophio_kim")
+## specify names for all ocflo samples
+sampleName <- c("ophio_cflo","ophio_ophio-infected")
 ## color scheme for the samples
 col.scheme <- c("#5A829F", "#AD212F", "black", "#5C2849")
 
@@ -128,10 +130,12 @@ for (i in 1:length(sample.name)) {
   writeLines(paste("running GO enrichment for NOT-EXPRESSED genes in", sample.name[[i]]))
   # run enrichment
   not.expressed[[i]] %>% 
-    go_enrichment(., 
-                  org = sample.name[[i]], 
-                  function.dir = path_to_repo,
-                  bg = 'all') %>% # enrichment against all ophio_cflo genes in the genome
+    
+    check_enrichment(.,
+                      org = sample.name[[i]],
+                      what = "pfams",
+                      function.dir = path_to_repo,
+                      bg = 'all') %>% 
     
     # # pull gene names for a given GO term
     # separate_rows(., gene_name, sep = ", ") %>%
@@ -141,9 +145,10 @@ for (i in 1:length(sample.name)) {
     # # filter(GO == "GO:0020037") %>% # heme binding
     # pull()
     
-    go_enrichment_plot(clean = "no",
-                       function.dir = path_to_repo) %>% 
-    print()
+    # go_enrichment_plot(clean = "no",
+    #                    function.dir = path_to_repo) %>% 
+    
+  print()
   
 }
 
@@ -162,6 +167,7 @@ for (i in 1:length(sample.name)) {
 
 ```
 
+___
 
 ## 2. Daily rhythms in gene expression
 
@@ -353,8 +359,8 @@ for(i in 1:length(l.phases)) {
 }
 
 ggpubr::ggarrange(plotlist=g,
-                  nrow = 2, ncol = 1,
-                  widths = c(1,2), labels = NA)
+                  nrow = 1, ncol = 2,
+                  widths = c(1,1), labels = NA)
 
 ```
 
@@ -379,50 +385,16 @@ for (i in 1:n_clusters){
   # Enrichment
   overrepresented.terms <-
     genes %>% 
-      go_enrichment(.,
+      check_enrichment(.,
                     function.dir = path_to_repo,
+                    what = "pfams",
                     org = sample.name[[1]],
-                    bg = expressed[[1]]) %>% 
-      filter(adj_pVal < FDR/100) %>% 
-      filter(over_under == "over")
+                    bg = expressed[[1]],
+                    filter = T,
+                    plot = F)
   writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
-  
-  # Enriched terms word-cloud (borrowed from: https://towardsdatascience.com/create-a-word-cloud-with-r-bde3e7422e8a)
-  if (nrow(overrepresented.terms)>0){
-    # load libraries
-    pacman::p_load(tm, wordcloud, RColorBrewer, wordcloud2)
-    # get text as a character vector
-    text <- overrepresented.terms %>% pull(GO_desc)
-    # load your text data as a corpus
-    docs <- Corpus(VectorSource(text)) # requires library "tm"
-    # clean text (necessary?)
-    docs <- docs %>%
-              tm_map(removeNumbers) %>%
-              tm_map(removePunctuation) %>%
-              tm_map(stripWhitespace)
-    docs <- tm_map(docs, content_transformer(tolower))
-    docs <- tm_map(docs, removeWords, c("process", "molecular","cellular",
-                                        "component", "compound", "part",
-                                        "activity", "acid"
-                                        ))
-    # create document-term-matrix
-    dtm <- TermDocumentMatrix(docs) 
-    matrix <- as.matrix(dtm) 
-    words <- sort(rowSums(matrix),decreasing=TRUE) 
-    df <- data.frame(word = names(words),freq=words)
-    # generate word-cloud
-    wordcloud::wordcloud(words = df$word, freq = df$freq, min.freq = 2,
-              max.words=200, random.order=FALSE, rot.per=0.35,
-              scale=c(5,0.15),
-              # colors=brewer.pal(8, "Dark2")
-              colors=col.scheme[[1]]
-              )
-    
-    ## save overrepresented GO terms for REVIGO analyses
-      overrepresented.terms %>% select(GO, adj_pVal) %>% 
-        readr::write_tsv(., paste0(path_to_repo,"/results/go_temp_files/",sample.name[[1]],"_Cluster_",i,".txt"))
-      
-  }
+  print(overrepresented.terms %>% as_tibble())
+
   # Stacked zplot
   genes %>% 
   stacked.zplot_tc6(cond = "beau") %>% 
@@ -432,10 +404,11 @@ for (i in 1:n_clusters){
 
 ```
 
+
 #### Ophio-cflo - 24h
 
 ```{r ophio_clusters}
-  
+
 for (i in 1:n_clusters){
   
   writeLines(paste0("Species: ", sample.name[[2]], "\n", "24h-rhythmic genes, Cluster: ", i))
@@ -447,65 +420,31 @@ for (i in 1:n_clusters){
   # Enrichment
   overrepresented.terms <-
     genes %>% 
-      go_enrichment(.,
+      check_enrichment(.,
                     function.dir = path_to_repo,
+                    what = "pfams",
                     org = sample.name[[2]],
-                    bg = expressed[[2]]) %>% 
-      filter(adj_pVal < FDR/100) %>% 
-      filter(over_under == "over")
+                    bg = expressed[[2]],
+                    filter = T,
+                    plot = F)
   writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
-  
-  # Enriched terms word-cloud (borrowed from: https://towardsdatascience.com/create-a-word-cloud-with-r-bde3e7422e8a)
-    if (nrow(overrepresented.terms) > 0) {
-      # load libraries
-      pacman::p_load(tm, wordcloud, RColorBrewer, wordcloud2)
-      # get text as a character vector
-      text <- overrepresented.terms %>% pull(GO_desc)
-      # load your text data as a corpus
-      docs <- Corpus(VectorSource(text)) # requires library "tm"
-      # clean text (necessary?)
-      docs <- docs %>%
-                tm_map(removeNumbers) %>%
-                tm_map(removePunctuation) %>%
-                tm_map(stripWhitespace)
-      docs <- tm_map(docs, content_transformer(tolower))
-      docs <- tm_map(docs, removeWords, c("process", "molecular","cellular",
-                                          "component", "compound", "part",
-                                          "activity", "acid"
-                                          ))
-      # create document-term-matrix
-      dtm <- TermDocumentMatrix(docs) 
-      matrix <- as.matrix(dtm) 
-      words <- sort(rowSums(matrix),decreasing=TRUE) 
-      df <- data.frame(word = names(words),freq=words)
-      # generate word-cloud
-      wordcloud::wordcloud(words = df$word, freq = df$freq, min.freq = 2,
-                max.words=200, random.order=FALSE, rot.per=0.35,
-                scale=c(4,0.15),
-                # colors=brewer.pal(8, "Dark2")
-                colors=col.scheme[[2]]
-                )
-      
-      ## save overrepresented GO terms for REVIGO analyses
-      overrepresented.terms %>% select(GO, adj_pVal) %>% 
-        # readr::write_tsv(., paste0("./results/go_temp_files/",sample.name[[2]],"_Cluster_",i,".txt"))
-        write.table(., paste0(path_to_repo,"/results/go_temp_files/",sample.name[[2]],"_Cluster_",i,".csv"),
-                    sep = ",",
-                    row.names = F, col.names = F)
-      
-    }
-  
+  print(overrepresented.terms %>% as_tibble())
   
   # Stacked zplot
-  genes %>% 
-  stacked.zplot_tc6(cond = "ophio_cflo") %>% 
-    multi.plot(rows = 1, cols = 1)
+      stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]]) %>% pluck(1)
+      stacked.plot2 <- genes %>% stacked.zplot_tc6(cond = sampleName[[2]]) %>% pluck(1)
+      ggpubr::ggarrange(plotlist=list(stacked.plot1, stacked.plot2),
+                    nrow = 1, ncol = 2,
+                    widths = c(1,1), labels = NA) %>% 
+        print()
   
 }
 
 ```
 
-### Reduce redundant GO terms
+> reducing redundant GO terms
+
+_Note to self:_ If we use GO terms instead of pfams, we will need to reduce the redundant GO annotations that is present in fungal annotation data.
 
 Two options to do this:
 
@@ -513,6 +452,8 @@ Option #1: Get the list of overrepresented GO terms and their associated p-value
 
 Option #2: Use the scripts provided by REVIGO to programmatically run REVIGO using bash/R. For more information see (here)[http://revigo.irb.hr/FAQ.aspx#q07]
 Status: tried running it via bash, and it didn't work; NEED TO FIGURE IT OUT.
+
+___
 
 ## 3. Beau v. Ophio - 24h-rhy
 
@@ -579,12 +520,23 @@ for (i in 1:2){
         query.legend = "bottom"
         ) %>% 
     print()
+  
+  writeLines(paste0(
+    "The above plot shows that of the ", length(rhy.dat), " rhythmic genes in ", sample.name[[i]],
+    ", how many has an 1:1 ortholog in the other fungal species. \n",
+    "Note, orthologous genes were identified using proteinortho "))
 }
 
 ```
 
 
 ### Rhy24 genes w/ orthologs
+
+Next, I wanted to see if certain gene clusters show a characteristic difference in their daily expression in a species-specific manner (meaning, same genes but different daily expression in the two fungal species?).
+
+To do so, I performed hierarchical clustering of all orthologous genes that show sig. 24h rhythms in EITHER Ocflo OR Beau to identify clusters of genes that show a synchronized expression in each of the two fungal species.
+
+#### STOPPED HERE!!!
 
 ```{r ortho_rhy24}
 rhy.homology.dat <- 
@@ -704,51 +656,15 @@ for (j in 1:2) {
     # Enrichment
     overrepresented.terms <-
       genes %>% 
-        go_enrichment(.,
+        check_enrichment(.,
                       function.dir = path_to_repo,
+                      what = "pfams",
                       org = sample.name[[j]],
-                      bg = expressed[[j]]) %>% 
-        filter(adj_pVal < FDR/100) %>% 
-        filter(over_under == "over")
+                      bg = expressed[[j]],
+                      filter = T,
+                      plot = F)
+    print(overrepresented.terms)
     writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
-    
-    # Enriched terms word-cloud (borrowed from: https://towardsdatascience.com/create-a-word-cloud-with-r-bde3e7422e8a)
-    if (nrow(overrepresented.terms)>0){
-      # load libraries
-      pacman::p_load(tm, wordcloud, RColorBrewer, wordcloud2)
-      # get text as a character vector
-      text <- overrepresented.terms %>% pull(GO_desc)
-      # load your text data as a corpus
-      docs <- Corpus(VectorSource(text)) # requires library "tm"
-      # clean text (necessary?)
-      docs <- docs %>%
-                tm_map(removeNumbers) %>%
-                tm_map(removePunctuation) %>%
-                tm_map(stripWhitespace)
-      docs <- tm_map(docs, content_transformer(tolower))
-      docs <- tm_map(docs, removeWords, c("process", "molecular","cellular",
-                                          "component", "compound", "part",
-                                          "activity", "acid"
-                                          ))
-      # create document-term-matrix
-      dtm <- TermDocumentMatrix(docs) 
-      matrix <- as.matrix(dtm) 
-      words <- sort(rowSums(matrix),decreasing=TRUE) 
-      df <- data.frame(word = names(words),freq=words)
-      # generate word-cloud
-      wordcloud::wordcloud(words = df$word, freq = df$freq, min.freq = 2,
-                max.words=200, random.order=FALSE, rot.per=0,
-                scale=c(4,0.15),
-                # colors=brewer.pal(8, "Dark2")
-                colors=col.scheme[[j]]
-                )
-      
-      # ## save overrepresented GO terms for REVIGO analyses
-      #   overrepresented.terms %>% select(GO, adj_pVal) %>% 
-      #     readr::write_tsv(., paste0(path_to_repo,"/results/go_temp_files/",
-      #                                sample.name[[1]],"_Cluster_",i,".txt"))
-        
-    }
     
     # Stacked zplot
     if (j==2) {
@@ -877,25 +793,25 @@ As we predicted, Cluster 3 and 4 genes show a stronger overlap with 24h-rhythmic
 ```{r gene_annotations}
 
 ## Get the annotation data
-ocflo.annots <- read.csv(paste0(path_to_repo, "/data/ophio_cflo_TC6_data.csv"), stringsAsFactors = F)
+ocflo.annots <- read.csv(paste0(path_to_repo, "/data/ophio_cflo_TC6_data.csv"), stringsAsFactors = F) %>% as.tibble()
 ocflo.annots %<>% 
-  as.tibble() %>%
   filter(expressed=="yes") %>%
   select(gene_name = gene_ID_ncbi, gene_ID_robin, blast_annot, GammaP_24h, GOs:ophio_kim_homolog)
 
 ## Subset the gene_names
-ocflo.annots %>% 
+ocflo.annots %>%
   filter(gene_name %in% cluster.dat[[4]]) %>%
+
+  # plot the q-values
+  ggplot() +
+  geom_density(aes(x=GammaP_24h)) +
+  labs(x="rhythmicity, 24h (q-value)") +
+  scale_x_continuous(breaks = c(0,0.05, 0.1, 0.5, 1)) +
+  theme_Publication()
   
-  # # plot the q-values
-  # ggplot() + 
-  # geom_density(aes(x=GammaP_24h)) +
-  # labs(x="rhythmicity, 24h (q-value)") +
-  # scale_x_continuous(breaks = c(0,0.05, 0.1, 0.5, 1)) +
-  # theme_Publication()
-  
-  filter(!is.na(GOs)) %>% 
-  view()
+  # which genes?
+  # filter(!is.na(GOs)) %>% 
+  # view()
 
 
 ## Check these genes for other annotations (signalP, SSP, TMHMM)
@@ -1162,7 +1078,9 @@ ggplot(all.DEGs) +
 ```{r will2020_data}
 
 ## Load the ophio DEG (at manipulation) data from Will et al. 2020
-will2020_data <- read.csv(paste0(path_to_repo,"/data/input/ophio_cflo/complete_annotations/FullBlast_EC05_RNAseq_orignal_copy_26Aug19.csv"), stringsAsFactors = F)
+will2020_data <- read.csv(paste0(path_to_repo,
+                                 "/data/input/ophio_cflo/complete_annotations/FullBlast_EC05_RNAseq_orignal_copy_26Aug19.csv"),
+                          stringsAsFactors = F)
 will2020_data %<>% 
   as_tibble() %>% 
   filter(sample_1=="Alive" & sample_2=="Fungus") %>%
@@ -1237,9 +1155,9 @@ Let's plot the daily expression of the DEGs (ocflo controls v. during infection)
 
 ```{r DEGs_stacked_zplot}
 
-inf.down %>% 
-  # stacked.zplot_tc6(cond = "inf")
-  stacked.zplot_tc6(cond = "ophio")
+# inf.down %>% 
+#   # stacked.zplot_tc6(cond = "inf")
+#   stacked.zplot_tc6(cond = "ophio")
 
 ```
 
@@ -1301,9 +1219,9 @@ for (i in 1:length(which.degs)) {
     
     # Manual color palette
     my_colour = list(
-      phase = c(light = "#F2E205", dark = "#010440"),
+      phase = c(light = "#F2E18D", dark = "#010440"),
       conds = c(ocflo_controls = col.scheme[[2]], ocflo_infection = col.scheme[[4]]),
-      cluster = viridis::cividis(100)[c(10,90,60,30)]) #### NEED TO CHANGE #### account for n_clusters
+      cluster = viridis::cividis(100)[c(seq(10,80,by=round(80/(n_clusters), 0)))])
     
     # Color scale
     my.breaks = seq(min(zscore.deg.dat), max(zscore.deg.dat), by=0.1)
@@ -1314,14 +1232,15 @@ for (i in 1:length(which.degs)) {
                annotation_row = my_gene_col, 
                annotation_col = my_sample_col,
                cutree_rows = n_clusters, # OG was 4
-               cutree_cols = 2,
+               # cutree_cols = 2,
+               gaps_col = c(12,24),
                annotation_colors = my_colour,
                border_color=FALSE,
                cluster_cols = F,
                breaks = my.breaks,
                ## color scheme borrowed from: 
                color = inferno(length(my.breaks) - 1),
-               # treeheight_row = 0, 
+               treeheight_row = 0,
                # treeheight_col = 0,
                # remove the color scale or not
                main = paste0("DEGs - ",names(which.degs)[[i]], "\n (n=",nrow(zscore.deg.dat), " genes)"),
@@ -1346,51 +1265,15 @@ for (i in 1:length(which.degs)) {
     # Enrichment
     overrepresented.terms <-
       genes %>% 
-        go_enrichment(.,
+        check_enrichment(.,
                       function.dir = path_to_repo,
+                      what = "pfams",
                       org = sampleName[[1]],
-                      bg = bg.genes) %>% 
-        filter(adj_pVal < FDR/100) %>% 
-        filter(over_under == "over")
+                      bg = bg.genes,
+                      filter = T,
+                      plot = F)
     writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
     
-    # Enriched terms word-cloud (borrowed from: https://towardsdatascience.com/create-a-word-cloud-with-r-bde3e7422e8a)
-    if (nrow(overrepresented.terms)>2){
-      # load libraries
-      pacman::p_load(tm, wordcloud, RColorBrewer, wordcloud2)
-      # get text as a character vector
-      text <- overrepresented.terms %>% pull(GO_desc)
-      # load your text data as a corpus
-      docs <- Corpus(VectorSource(text)) # requires library "tm"
-      # clean text (necessary?)
-      docs <- docs %>%
-                tm_map(removeNumbers) %>%
-                tm_map(removePunctuation) %>%
-                tm_map(stripWhitespace)
-      docs <- tm_map(docs, content_transformer(tolower))
-      docs <- tm_map(docs, removeWords, c("process", "molecular","cellular",
-                                          "component", "compound", "part",
-                                          "activity", "acid"
-                                          ))
-      # create document-term-matrix
-      dtm <- TermDocumentMatrix(docs) 
-      matrix <- as.matrix(dtm) 
-      words <- sort(rowSums(matrix),decreasing=TRUE) 
-      df <- data.frame(word = names(words),freq=words)
-      # generate word-cloud
-      wordcloud::wordcloud(words = df$word, freq = df$freq, min.freq = 2,
-                max.words=200, random.order=FALSE, rot.per=0,
-                scale=c(4,0.15),
-                # colors=brewer.pal(8, "Dark2")
-                colors=col.scheme[[2]]
-                )
-      
-      # ## save overrepresented GO terms for REVIGO analyses
-      #   overrepresented.terms %>% select(GO, adj_pVal) %>% 
-      #     readr::write_tsv(., paste0(path_to_repo,"/results/go_temp_files/",
-      #                                sample.name[[1]],"_Cluster_",i,".txt"))
-        
-    }
     # Stacked zplot
     stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]]) %>% pluck(1)
     stacked.plot2 <- genes %>% stacked.zplot_tc6(cond = sampleName[[2]]) %>% pluck(1)

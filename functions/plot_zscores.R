@@ -1019,8 +1019,14 @@ stacked.zplot_tc7 <-
 # USage: to plot multiple diel gene expression (as z-scores) stacked on top of each other;
 # Application: fungal time-course data (Ophio and Beau blastospores collected every 2h, over 24h)
 
-stacked.zplot_tc6 <- 
-  function(gene_names, cond = "ophio_cflo", lwd=1.5, alpha=0.75, bg.alpha = 0.1, ...) {
+stacked.zplot_tc6 <- function(gene_names, 
+                              cond = "ophio_cflo", 
+                              period = "24",
+                              verbose = F,
+                              clean = F,
+                              lwd=1.5, 
+                              alpha=0.75, 
+                              bg.alpha = 0.1, ...) {
     
     ## HOUSEKEEPING ##
     
@@ -1047,11 +1053,13 @@ stacked.zplot_tc6 <-
     ## 3. TC7_data.db         # for ophio expression data during infection
     inf.db <- dbConnect(RSQLite::SQLite(),
                         paste0(path_to_repo,"/../Das_et_al_2022b/data/databases/TC7_data.db"))
-    
+    ## 4. TC7_ejtk.db         # for ophio rhythmicity data during infection
+    inf.ejtk.db <- dbConnect(RSQLite::SQLite(),
+                        paste0(path_to_repo,"/../Das_et_al_2022b/data/databases/TC7_ejtk.db"))
     ## PREP THE DATASETS ##
     
     ## save the list of gene names in a character vector
-    g <- gene_names
+    g <- unique(gene_names)
     
     ## Read the zscores for all conditions
     # specify sample name
@@ -1065,19 +1073,33 @@ stacked.zplot_tc6 <-
       }
     }
     
-    # # load the core datasets
-    # load(file = "./functions/func_data/TC5_core_datasets.RData")
-    # # Foragers and Nurses (TC5)
-    # #foragers_zscores <- read.csv("~/Documents/GitHub/R-scripts_zombie_ant_lab/TC5/Zscore_data/TC5_zscores_foragers.csv", header = T, stringsAsFactors = F)
-    # #nurses_zscores <- read.csv("~/Documents/GitHub/R-scripts_zombie_ant_lab/TC5/Zscore_data/TC5_zscores_nurses.csv", header = T, stringsAsFactors = F)
-    # foragers_zscores <- cflo.zscores.for
-    # nurses_zscores <- cflo.zscores.nur
+    ## Read rhythmic genes for all conditions
+    # specify periodicity of daily rhythms
+    period = period
+    rhy <- list()
+    for (i in 1:length(sample.name)){
+      if (i == 3){
+        rhy[[i]] <-
+          tbl(inf.ejtk.db, paste0(sample.name[[i]],"_zscores_",period[[1]],'h')) %>%
+          filter(GammaP < gamma.pval) %>%
+          select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
+          select(ID) %>% pull()
+      } else {
+        rhy[[i]] <-
+          tbl(ejtk.db, paste0(sample.name[[i]],"_zscores_",period,'h')) %>%
+          filter(GammaP < gamma.pval) %>%
+          select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
+          select(ID) %>% pull()
+      }
+    }
+      
+    if (verbose==T) {
+      # How many genes are rythmic?
+      writeLines(paste0("sample: ", sample.name[[i]]))
+      writeLines(paste0("n(",period, "h-rhy-genes) in test set", " : ", length(rhy[[i]])))
+    }
     
-    # # Read the annotation file for description of the genes
-    # all_genes <- read.csv(paste0(path_to_repo,"/functions/func_data/cflo_annots.csv"), header = T, stringsAsFactors = F)
-    # all_genes_annots <- all_genes %>% 
-    #   dplyr::select(gene_name, annot = old_annotation)
-    
+  
     ## Specify color scheme
     # col.scheme <- c("#B9BBC8","#AD212F","#5A829F")
     # col.scheme <- c("grey60","#AD212F","#5A829F")
@@ -1097,10 +1119,12 @@ stacked.zplot_tc6 <-
         arrange(match(gene_name, g)) %>% 
         mutate(cond = sample.name[[1]]) %>% 
         mutate(ZT = readr::parse_number(ZT))
+      
       col.scheme <- col.scheme[1]
       conds <- conds[1]
+      rhy.genes <- rhy[[1]]
       
-    } else if (cond == "ophio" | cond == "ophio_cflo" | cond == "a"){
+      } else if (cond == "ophio" | cond == "ophio_cflo" | cond == "a"){
       dummy <- 
         zscore.dat[[2]] %>%
         filter(gene_name %in% g) %>% 
@@ -1108,8 +1132,10 @@ stacked.zplot_tc6 <-
         arrange(match(gene_name, g)) %>% 
         mutate(cond = sample.name[[2]]) %>% 
         mutate(ZT = readr::parse_number(ZT))
+      
       col.scheme <- col.scheme[2]
       conds <- conds[2]
+      rhy.genes <- rhy[[2]]
       
     } else if (cond == "inf" | cond == "inf_ophio_cflo" | cond == "ophio_ophio-infected"){
       dummy <- 
@@ -1119,8 +1145,10 @@ stacked.zplot_tc6 <-
         arrange(match(gene_name, g)) %>% 
         mutate(cond = sample.name[[3]]) %>% 
         mutate(ZT = readr::parse_number(ZT))
+      
       col.scheme <- col.scheme[3]
       conds <- conds[3]
+      rhy.genes <- rhy[[3]]
       
     # } else if (cond == "all" | cond == "tc6" | cond == "TC6" | cond == "ab") {
     #   dummy <- rbind(dummy.beau, dummy.ocflo)
@@ -1183,8 +1211,12 @@ stacked.zplot_tc6 <-
         xlab("") +
         ylab("") +
         
-        # Set titles for individual plots
-        # ggtitle(paste0(i," heads")) +
+        # provide all rhythmicity info in the title
+        labs(
+          title = paste0(round(length(unique(intersect(rhy.genes,g)))/length(g)*100,0), "% ",period,"h")
+          # subtitle = "",
+          # caption = ""
+          ) +
         
         theme_Publication() +
         scale_x_continuous(breaks = c(0,4,8,12,16,20,24)) +
@@ -1207,168 +1239,274 @@ stacked.zplot_tc6 <-
       #                                        "black")))
     })
     
-    # Let's name the plots with their resp. gene names
-    # names(l) <- c("beau", "ophio_cflo")
-    
-    # set the working directory to the pre-existing one
-    # setwd(current.dir)
-    
     # return the list with all the plots and the data frame containing   
     return(l);
     
   }
 
-# # Stacked plots II --------------------------------------------------------
-# 
-# # Function name: stacked.zplot
-# # USage: to plot multiple diel gene expression (of Z scores) stacked on top of each other;
-# # Application: could be used to report similar diel expression patterns for multiple genes
-# 
-# stacked.logplot <- 
-#   function(gene_names, caste = "both", lwd=1.5, alpha=0.75, bg.alpha = 0.1) {
+#  Function 4D: amplitude.plot_tc6() ---------------------------------
+# Function name: 
+# USage: 
+# Application: 
+
+# amplitude.plot_tc6 <- 
+#   function(gene_names, cond = "ophio_cflo", lwd=0.75, tc5=F, mean=T, stats=F, ci=T, ...) {
 #     
-#     # load the required libraries
-#     library(tidyverse)
-#     library(gridExtra)
-#     library(ggplot2)
+#     ## HOUSEKEEPING ##
 #     
-#     # load the core datasets
-#     load(file = "~/Documents/GitHub/R-scripts_zombie_ant_lab/Functions/data/TC5_core_datasets.RData")
+#     ## load the required libraries
+#     pacman::p_load(RSQLite, tidyverse, dbplyr, gridExtra, ggplot2, conflicted)
+#     ## set conflict preference
+#     conflict_prefer("select", "dplyr")
+#     conflict_prefer("filter", "dplyr")
+#     conflict_prefer("sd", "stats")
 #     
-#     #save the current directory 
-#     current.dir <- getwd()
-#     #change the directory to the folder where we have our zscores
-#     #setwd("~/Documents/GitHub/R-scripts_zombie_ant_lab/TC5/Zscore_data")
-#     # save the list of gene names in a character vector
+#     ## set path to your working directory
+#     path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a" #### CHANGE HERE ####
+#     
+#     ## load functions
+#     # customized theme for publication quality figures
+#     source(paste0(path_to_repo,"/functions/theme_publication.R"))
+#     
+#     ## load databases (TC7)
+#     ## 1. TC6_fungal_ejtk.db
+#     ejtk.db <- dbConnect(RSQLite::SQLite(),
+#                          paste0(path_to_repo, "/data/databases/TC6_fungal_ejtk.db")) #### CHANGE HERE ####
+#     ## 2. TC6_fungal_data.db
+#     data.db <- dbConnect(RSQLite::SQLite(),
+#                          paste0(path_to_repo, "/data/databases/TC6_fungal_data.db")) #### CHANGE HERE ####
+#     ## 3. TC7_data.db         # for ophio expression data during infection
+#     inf.db <- dbConnect(RSQLite::SQLite(),
+#                         paste0(path_to_repo,"/../Das_et_al_2022b/data/databases/TC7_data.db"))
+#     
+#     ## PREP THE DATASETS ##
+#     
+#     ## save the list of gene names in a character vector
 #     g <- gene_names
 #     
-#     # if (log=F) {
-#     # # Read the zscores for caste
-#     # # Read the zscore file
-#     # # foragers_zscores <- read.csv("~/Documents/GitHub/R-scripts_zombie_ant_lab/TC5/Zscore_data/TC5_zscores_foragers.csv", header = T, stringsAsFactors = F)
-#     # # nurses_zscores <- read.csv("~/Documents/GitHub/R-scripts_zombie_ant_lab/TC5/Zscore_data/TC5_zscores_nurses.csv", header = T, stringsAsFactors = F)
+#     ## Read the zscores for all conditions
+#     # specify sample name
+#     sample.name <- c("beau", "ophio_cflo", "ophio_ophio-infected") #### CHANGE HERE ####
+#     zscore.dat <- list()
+#     for (i in 1:length(sample.name)){
+#       zscore.dat[[i]] <- data.db %>% tbl(., paste0(sample.name[i],"_zscores")) %>% collect()
+#     }
+#     
+#     # # load the core datasets
+#     # load(file = "./functions/func_data/TC5_core_datasets.RData")
+#     # # Foragers and Nurses (TC5)
+#     # #foragers_zscores <- read.csv("~/Documents/GitHub/R-scripts_zombie_ant_lab/TC5/Zscore_data/TC5_zscores_foragers.csv", header = T, stringsAsFactors = F)
+#     # #nurses_zscores <- read.csv("~/Documents/GitHub/R-scripts_zombie_ant_lab/TC5/Zscore_data/TC5_zscores_nurses.csv", header = T, stringsAsFactors = F)
 #     # foragers_zscores <- cflo.zscores.for
 #     # nurses_zscores <- cflo.zscores.nur
-#     # }
-# 
-#     # else {
-#       foragers_zscores <-  cflo.annots.exp %>% dplyr::select(gene_name, X2F:X24F)
-#       foragers_zscores[-1] <- log2(foragers_zscores[-1] + 1)
-#       nurses_zscores <-  cflo.annots.exp %>% dplyr::select(gene_name, X2N:X24N)
-#       nurses_zscores[-1] <- log2(nurses_zscores[-1] + 1)
-#     # }
 #     
-#     # Read the annotation file for description of the genes
-#     #all_genes <- read.csv("~/R-scripts_zombie_ant_lab/Enrichment_analysis/Ants/cflo_annotations_expression_v2.csv", header = T, stringsAsFactors = FALSE)
-#     all_genes <- cflo.annots.exp
-#     all_genes_annots <- all_genes %>% 
-#       dplyr::select(gene_name, annot = old_annotation)
+#     # # Read the annotation file for description of the genes
+#     # all_genes <- read.csv(paste0(path_to_repo,"/functions/func_data/cflo_annots.csv"), header = T, stringsAsFactors = F)
+#     # all_genes_annots <- all_genes %>% 
+#     #   dplyr::select(gene_name, annot = old_annotation)
 #     
-#     # Transforming the data to be able to use ggplot
-#     # Let's try the logic on a dummy subset
-#     dummy.for <- foragers_zscores %>%
-#       filter(gene_name %in% g) %>% 
-#       gather(ZT, zscore, -1) %>% 
-#       arrange(match(gene_name, g)) %>% 
-#       mutate(caste = "for") %>% 
-#       mutate(ZT = readr::parse_number(ZT)) %>% 
-#       left_join(all_genes_annots, by = "gene_name")
+#     ## Specify color scheme
+#     # col.scheme <- c("#B9BBC8","#AD212F","#5A829F")
+#     # col.scheme <- c("grey60","#AD212F","#5A829F")
+#     col.scheme <- c("#5A829F", "#AD212F", "#5C2849")
+#     # col.scheme <- c("grey50","#AD212F","#3B758C")
 #     
-#     dummy.nur <- nurses_zscores %>%
-#       filter(gene_name %in% g) %>% 
-#       gather(ZT, zscore, -1) %>% 
-#       arrange(match(gene_name, g)) %>% 
-#       mutate(caste = "nur") %>% 
-#       mutate(ZT = readr::parse_number(ZT)) %>% 
-#       left_join(all_genes_annots, by = "gene_name")
+#     ## Specify different samples
+#     # conds <- c("beau", "ophio_cflo")
+#     conds <- sample.name
 #     
-#     # make an if else statement to modify the dataset as per the "caste" parameter
-#     if (caste == "for" | caste == "forager" | caste == "foragers" | caste == "f"){
-#       dummy <- dummy.for
-#       col.scheme <- c("#D91A2A")
-#     } 
-#     else if (caste == "nur" | caste == "nurse" | caste == "nurses" | caste == "n") {
-#       dummy <- dummy.nur
-#       col.scheme <- c("#2182BF")
-#     } else if (caste == "all" | caste == "both" | caste == "a" | caste == "b") {
-#       dummy <- rbind(dummy.for, dummy.nur)
-#       col.scheme <- c("#D91A2A","#2182BF")
+#     # make an if else statement to modify the dataset as per the "cond" parameter
+#     if (cond == "beau" | cond == "beauveria" | cond == "b"){
+#       dummy <- 
+#         zscore.dat[[1]] %>% 
+#         filter(gene_name %in% g) %>%
+#         gather(ZT, zscore, -1) %>% 
+#         arrange(match(gene_name, g)) %>% 
+#         mutate(cond = sample.name[[1]]) %>% 
+#         mutate(ZT = readr::parse_number(ZT))
+#       col.scheme <- col.scheme[1]
+#       conds <- conds[1]
+#       
+#     } else if (cond == "ophio" | cond == "ophio_cflo" | cond == "a"){
+#       dummy <- 
+#         zscore.dat[[2]] %>%
+#         filter(gene_name %in% g) %>% 
+#         gather(ZT, zscore, -1) %>% 
+#         arrange(match(gene_name, g)) %>% 
+#         mutate(cond = sample.name[[2]]) %>% 
+#         mutate(ZT = readr::parse_number(ZT))
+#       col.scheme <- col.scheme[2]
+#       conds <- conds[2]
+#       
+#     } else if (cond == "inf" | cond == "inf_ophio_cflo" | cond == "ophio_ophio-infected"){
+#       dummy <- 
+#         zscore.dat[[3]] %>%
+#         filter(gene_name %in% g) %>% 
+#         gather(ZT, zscore, -1) %>% 
+#         arrange(match(gene_name, g)) %>% 
+#         mutate(cond = sample.name[[3]]) %>% 
+#         mutate(ZT = readr::parse_number(ZT))
+#       col.scheme <- col.scheme[3]
+#       conds <- conds[3]
+#       
+#       # } else if (cond == "all" | cond == "tc6" | cond == "TC6" | cond == "ab") {
+#       #   dummy <- rbind(dummy.beau, dummy.ocflo)
+#       #   col.scheme <- col.scheme
+#       #   conds <- conds
+#       
 #     } else {
-#       print("Invalid value for caste. Use one of the following options: for, nur, all.")
+#       print("Invalid value for cond. Use one of the following options: beau, ophio_cflo")
 #       # stop the function and give the user an error.
 #       stop();
 #     }
 #     
-#     # make the gene_name and caste columns as factors
+#     # make the gene_name and cond columns as factors
 #     dummy[[1]] <- as.factor(dummy[[1]]) # gene name
-#     dummy[[4]] <- as.factor(dummy[[4]]) # caste
-#     dummy[[5]] <- as.factor(dummy[[5]]) # annotation column
+#     dummy[[4]] <- factor(dummy[[4]], levels = conds) # cond
 #     
-#     dummy.summary <- 
+#     
+#     ### CALCULATE AMPLITUDE
+#     plot.dat <- 
 #       dummy %>% 
-#       group_by(caste, ZT) %>% 
-#       summarise(mean_zscore = mean(zscore))
+#       select(gene_name,cond,zscore) %>%
+#       group_by(gene_name,cond) %>% 
+#       na.omit() %>% 
+#       mutate(amp=max(zscore)-min(zscore)) %>% 
+#       mutate(cv=sd(zscore)/mean(zscore)) %>% 
+#       select(cond, amp) %>% 
+#       distinct()
 #     
-#     # Initialize a list to save the plots
-#     l <- list()
-#     # Let's plot
-#     library(ggplot2)
-#     pd <- position_dodge(0.2)
-#     l <- lapply(sort(unique(dummy[[4]])), function(i) {
+#     if (stats==T){
+#       ## Perform a Kruskal 
+#       kruskal.res <- ggpubr::compare_means(amp~cond, data = plot.dat, 
+#                                            paired = T, method = "kruskal.test")
+#       if (kruskal.res$p.adj<0.05) {
+#         writeLines("\nKruskal wallis test found significant differences in means (q<0.05)\n")
+#         
+#         #calculate the summary stats
+#         writeLines("\nSummary stats:\n")
+#         plot.dat %>% 
+#           # make the summary table
+#           summarySE(.,
+#                     # specify your measurevar (prop_time)
+#                     measurevar= "amp", 
+#                     groupvars=c("cond")) %>% 
+#           select(cond, mean_amp=amp,sd:ci) %>% 
+#           print()
+#         
+#         # perform pairwise tests
+#         writeLines("\nPerforming pairwise Wilcox test...")
+#         ggpubr::compare_means(amp~cond, data = plot.dat, paired = F, 
+#                               method = "wilcox.test") %>% 
+#           print()
+#       } else {
+#         writeLines("\nKruskal wallis test did not find any evidence for difference in means (q > 0.05)\n")
+#       }
+#     } 
+#     
+#     
+#     plot <- 
+#       plot.dat %>% 
+#       ggplot() +
+#       geom_boxplot(aes(x=cond,y=amp, col=cond), size=lwd, outlier.size = 0.3) +
+#       # facet_grid(~cond) +
+#       theme_Publication(base_size = 15) +
+#       scale_color_manual(values = col.scheme.sub) +
+#       scale_fill_manual(values = col.scheme.sub) +
+#       theme(axis.text.x = element_text(color = NA))
+#     
+#     ## bootstrapped CIs using dabestr
+#     
+#     ## plots with mean ± 95%CI
+#     pd <- position_dodge(0.1)
+#     plot.2 <-
+#       plot.dat %>%
 #       
-#       # Define the dataset
-#       ggplot() + 
-#         
-#         # # indicate light-dark phase
-#         # geom_rect(aes(xmin = 11.5, xmax = 23.5, ymin = -Inf, ymax = Inf),    
-#         #           fill = "lightgrey", alpha = 0.02, color=NA) +
-#         
-#         # Plot the individual gene expressions (zscores)
-#         geom_line(data=dummy[dummy$caste==i,], 
-#                   aes(x=as.numeric(as.character(ZT)), y=zscore, group = gene_name),
-#                   size=0.5, alpha=bg.alpha, 
-#                   col = ifelse(i=="for",
-#                                c(col.scheme[[1]], col.scheme[[2]]),
-#                                c(col.scheme[[2]], col.scheme[[1]]))) +
-#         
-#         # Plot the mean gene expression for the given gene list
-#         geom_line(data = dummy.summary[dummy.summary$caste == i,],
-#                   aes(x=as.numeric(as.character(ZT)), y=mean_zscore), 
-#                   col = "#3C3C40",
-#                   size = lwd, alpha = alpha) +
-#         
-#         
-#         # Set the theme
-#         xlab("") +
-#         ylab("") +
-#         theme_Publication() +
-#         scale_x_continuous(breaks = c(0,4,8,12,16,20,24)) +
-#         scale_y_continuous(limits = c(min(dummy[[3]]),max(dummy[[3]]))) + 
-#         theme(text = element_text(size = 20, colour = 'black'),
-#               legend.position = "none",
-#               axis.title.x=element_blank(),
-#               axis.text.x=element_blank()) +
-#         # set transparency
-#         theme( 
-#           panel.grid.minor = element_blank(),
-#           panel.grid.major = element_blank(),
-#           panel.background = element_rect(fill = "transparent",colour = NA),
-#           plot.background = element_rect(fill = "transparent",colour = NA)) 
-#       # show only a subset of the y-axis tick labels
-#       # theme(axis.text.y=element_text(color=c("transparent","black","transparent",
-#       #                                        "transparent","black","transparent",
-#       #                                        "transparent","transparent","transparent",
-#       #                                        "black")))
-#     })
+#       # make the summary table
+#       summarySE(.,
+#                 # specify your measurevar (prop_time)
+#                 measurevar= "amp", 
+#                 groupvars=c("cond")) %>% 
+#       
+#       # make the value column
+#       mutate(value=amp) %>% 
+#       
+#       ggplot(aes(y=amp, x=cond, col=cond)) +
+#       
+#       # Add error bar here
+#       geom_errorbar(aes(ymin=value-sd, ymax=value+sd),
+#                     width=.4, position=pd, col="black", alpha = 0.7) +
+#       
+#       # Add the points on top of the error bars
+#       geom_point(position=pd, size=7,
+#                  aes(fill=cond),
+#                  # col="black", fill="black",
+#                  show.legend = F, pch=21, alpha=0.9) +
+#       
+#       theme_Publication(base_size = 15) +
+#       scale_color_manual(values = col.scheme.sub) +
+#       scale_fill_manual(values = col.scheme.sub) +
+#       
+#       # scale_y_continuous(breaks = c(0,.2,.4,.6,.8,1),
+#       #                    labels = c("0", "", "0.4","","0.8",""),
+#       #                    limits = c(0,1)) +
+#       
+#       # ylab("proportion returned at end of Day 1")
+#       # ylab("cumulative prop. returned at end of Day 2")
+#       ylab("amplitude\n (mean ± SD)") +
+#       # coord_flip() 
+#       theme(axis.text.x = element_text(color = NA))
 #     
-#     # Let's name the plots with their resp. gene names
-#     names(l) <- c("foragers","nurses")
+#     ### mean ± 95% CI
+#     plot.3 <-
+#       plot.dat %>%
+#       
+#       # make the summary table
+#       summarySE(.,
+#                 # specify your measurevar (prop_time)
+#                 measurevar= "amp", 
+#                 groupvars=c("cond")) %>% 
+#       
+#       # make the value column
+#       mutate(value=amp) %>% 
+#       
+#       ggplot(aes(y=amp, x=cond, col=cond)) +
+#       
+#       # Add error bar here
+#       geom_errorbar(aes(ymin=value-ci, ymax=value+ci),
+#                     width=.4, position=pd, col="black", alpha = 0.7) +
+#       
+#       # Add the points on top of the error bars
+#       geom_point(position=pd, size=7,
+#                  aes(fill=cond),
+#                  # col="black", fill="black",
+#                  show.legend = F, pch=21, alpha=0.9) +
+#       
+#       theme_Publication(base_size = 15) +
+#       scale_color_manual(values = col.scheme.sub) +
+#       scale_fill_manual(values = col.scheme.sub) +
+#       
+#       # scale_y_continuous(breaks = c(0,.2,.4,.6,.8,1),
+#       #                    labels = c("0", "", "0.4","","0.8",""),
+#       #                    limits = c(0,1)) +
+#       
+#       # ylab("proportion returned at end of Day 1")
+#       # ylab("cumulative prop. returned at end of Day 2")
+#       ylab("amplitude\n (mean ± 95% CI)") +
+#       # coord_flip() 
+#       theme(axis.text.x = element_text(color = NA))
 #     
-#     # set the working directory to the pre-existing one
-#     setwd(current.dir)
 #     
-#     # return the list with all the plots and the data frame containing   
-#     return(l);
+#     
+#     if (mean==T & ci==F){
+#       return(plot.2)  
+#     } else if (mean==F & ci==F) {
+#       return(plot)
+#     } else {
+#       return(plot.3)
+#     }
+#     
+#     
+#     
 #     
 #   }
-
