@@ -32,12 +32,13 @@ rm(list = ls())
 pacman::p_load(pheatmap, dendextend, tidyverse, viridis)
 pacman::p_load(RSQLite, tidyverse, dbplyr, DT, conflicted, WGCNA, igraph)
 pacman::p_load(patchwork)
+library(timecourseRnaseq)
 
 #' set conflict preference
-conflict_prefer("select", "dplyr")
-conflict_prefer("filter", "dplyr")
-conflict_prefer("layout", "plotly")
-conflict_prefer("hclust", "flashClust")
+conflict_prefer("select", "dplyr", quiet = T)
+conflict_prefer("filter", "dplyr", quiet = T)
+conflict_prefer("layout", "plotly", quiet = T)
+conflict_prefer("hclust", "flashClust", quiet = T)
 
 #' set path to your working directory
 path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a"
@@ -46,7 +47,7 @@ path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a"
 # customized theme for publication quality figures
 source(paste0(path_to_repo,"/functions/theme_publication.R"))
 # function to perform enrichment analysis
-source(paste0(path_to_repo,"/functions/enrichment_analysis.R"))
+# source(paste0(path_to_repo,"/functions/enrichment_analysis.R"))
 # function to plot z-scores (Cflo genes only)
 source(paste0(path_to_repo,"/functions/plot_zscores.R"))
 

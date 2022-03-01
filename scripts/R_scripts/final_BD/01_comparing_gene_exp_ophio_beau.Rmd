@@ -35,13 +35,14 @@ pacman::p_load(pheatmap, dendextend, tidyverse, viridis)
 pacman::p_load(RSQLite, tidyverse, dbplyr, DT, conflicted)
 pacman::p_load(patchwork, glue)
 pacman::p_load(circular)
+pacman::p_load(writexl)
+nolibrary(timecourseRnaseq)
 
 ## set conflict preference
-conflict_prefer("select", "dplyr")
-conflict_prefer("filter", "dplyr")
-conflict_prefer("layout", "plotly")
-conflict_prefer("hclust", "flashClust")
-conflict_prefer("union", "dplyr")
+conflict_prefer("select", "dplyr", quiet = T)
+conflict_prefer("filter", "dplyr", quiet = T)
+conflict_prefer("hclust", "flashClust", quiet = T)
+conflict_prefer("union", "dplyr", quiet = T)
 
 ## set path to your working directory
 path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a"
@@ -61,11 +62,15 @@ source(paste0(path_to_repo,"/functions/plot_zscores.R"))
 
 # SAMPLE NAME
 ## specify sample name
-sample.name <- c("beau", "ophio_cflo", "ophio_kim")
+sample.name <- c("beau", "ophio_cflo")
 ## specify names for all ocflo samples
 sampleName <- c("ophio_cflo","ophio_ophio-infected")
 ## color scheme for the samples
-col.scheme <- c("#5A829F", "#AD212F", "black", "#5C2849")
+col.scheme <- c("#5A829F", "#AD212F", "#5C2849")
+# col.scheme <- c("#5A829F", "#AD212F", "black", "#5C2849")
+
+## annotation files
+annots <- list(beau_annots,ophio_cflo_annots)
 
 # SCRIPT NAME
 ## specify the name of the script (folder) where figures will be saved
@@ -77,23 +82,37 @@ gamma.pval = 0.05
 ## Set false discovery rate for functional enrichment analyses
 FDR = 5
 
+## Set a counter for supplementary excel files
+counter <- 0
+
 ```
 
+> Loading databases
 
 ```{r load_data}
 
 # LOAD DATABASES (TC7)
 # 1. TC6_ejtk.db
 # Desc: This database contains all ejtk-output for TC6
-ejtk.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_ejtk.db"))
+ejtk.db <- dbConnect(RSQLite::SQLite(),
+                     paste0(path_to_repo,"/data/databases/TC6_fungal_ejtk.db"))
 # which tables are in the database
 src_dbi(ejtk.db)
 #
 # 2. TC6_data.db
-data.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_repo,"/data/databases/TC6_fungal_data.db"))
+data.db <- dbConnect(RSQLite::SQLite(),
+                     paste0(path_to_repo,"/data/databases/TC6_fungal_data.db"))
 src_dbi(data.db)
 #
-
+# 3. TC7_data.db
+inf.db <- dbConnect(RSQLite::SQLite(),
+                   paste0(path_to_repo,"/../Das_et_al_2022b/data/databases/TC7_data.db"))
+#
+# 4. TC7_ejtk.db
+inf.ejtk.db <- dbConnect(RSQLite::SQLite(),
+                   paste0(path_to_repo,"/../Das_et_al_2022b/data/databases/TC7_ejtk.db"))
+#
+#
 ```
 
 
@@ -126,16 +145,25 @@ for (i in 1:length(sample.name)) {
 }
 
 # A2: run enrichment (make plot of enrichment found of non-expressed genes)
+
+### Gene set of interest 1 ###
+gsoi.1 <- list()
+
+## loop STARTS
 for (i in 1:length(sample.name)) {
   writeLines(paste("running GO enrichment for NOT-EXPRESSED genes in", sample.name[[i]]))
+  
   # run enrichment
   not.expressed[[i]] %>% 
     
     check_enrichment(.,
                       org = sample.name[[i]],
                       what = "pfams",
-                      function.dir = path_to_repo,
-                      bg = 'all') %>% 
+                      bg = 'all',
+                      expand = T) %>% 
+    
+    # which enterotoxin genes are not expressed in culture
+    # filter(annot_desc=="Enterotoxin_a") %>% 
     
     # # pull gene names for a given GO term
     # separate_rows(., gene_name, sep = ", ") %>%
@@ -145,13 +173,38 @@ for (i in 1:length(sample.name)) {
     # # filter(GO == "GO:0020037") %>% # heme binding
     # pull()
     
-    # go_enrichment_plot(clean = "no",
-    #                    function.dir = path_to_repo) %>% 
+    # nothing much to talk about things that have no annotations ---
+    filter(annot_desc!="no_desc") %>%
     
-  print()
+    # save the results to a file
+    arrange(annot_desc) ->  gsoi.1[[i]]
+  
+  # MAKE THE SUPP FILE
+  foo <-
+    annots[[i]] %>%
+    select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>% 
+    filter(gene_name %in% not.expressed[[i]]) %>% 
+    left_join(gsoi.1[[i]][,c(1,3)], by="gene_name") %>% 
+    select(gene_name, gene_desc, enriched_annot=annot_desc, everything()) %>%
+    arrange(enriched_annot)
+  gsoi.1[[i]] <- foo
+  
+    
+    # print()
   
 }
-
+### loop ENDS
+## Save results of not_expressed genes into an excel file
+supp <- list(
+  "not_expressed_beau" = gsoi.1[[1]],
+  "not_expressed_ophio" = gsoi.1[[2]])
+writexl::write_xlsx(supp,
+                    path = paste0(path_to_repo,"/results/00_supplementary_files/01_gsoi_not_expressed_beau_ophio.xlsx"
+                                  )
+                    )
+# update counter
+counter <- counter+1
+  
 # B: genes that are expressed (FPKM > 1 for at least one time point)
 expressed <- list()
 for (i in 1:length(sample.name)) {
@@ -191,6 +244,8 @@ for (i in 1:2) {
   # How many genes are rythmic?
   writeLines(paste0("n(rhythmic-",period, "h) in ", sample.name[[i]], " : ", length(rhy[[i]])))
 }
+
+
 
 ```
 
@@ -275,6 +330,7 @@ for (i in 1:2) {
   
 }
 
+
 ```
 
 
@@ -286,15 +342,25 @@ rhy.24.sig <- list()
 phase.ejtk <- list()
 
 # Obtain the phases of 24h-rhythmic genes beau v. ophio_cflo
-for (i in 1:2) {
+for (i in 1:3) {
 
-rhy.24.sig[[i]] <- 
-  tbl(ejtk.db, paste0(sample.name[i],"_zscores_24h")) %>% 
-  filter(GammaP < gamma.pval) %>% 
-  collect()
+  if (i != 3) {
+  rhy.24.sig[[i]] <- 
+    tbl(ejtk.db, paste0(sample.name[i],"_zscores_24h")) %>% 
+    filter(GammaP < gamma.pval) %>% 
+    collect()
 
-# Get the phases of the best matched waveforms
-phase.ejtk[[i]] <- circular::circular(rhy.24.sig[[i]]$Phase, units="hours", template="clock24")
+  } else {
+    rhy.24.sig[[i]] <- 
+      tbl(inf.ejtk.db, paste0(sampleName[2], "_zscores_24h")) %>% 
+      filter(GammaP < gamma.pval) %>% 
+      collect()
+  }
+  
+  # Get the phases of the best matched waveforms
+  phase.ejtk[[i]] <- circular::circular(rhy.24.sig[[i]]$Phase, 
+                                        units="hours", template="clock24")
+
 # # Get the time-of-day of expression peak
 # phase.ejtk[[i]] <- circular::circular(rhy.24.sig[[i]]$MaxLoc, units="hours", template="clock24")
 # # Get the time-of-day of expression trough
@@ -305,13 +371,13 @@ phase.ejtk[[i]] <- circular::circular(rhy.24.sig[[i]]$Phase, units="hours", temp
 # save all the circular phases in a list
 l.phases <- phase.ejtk
 # let's name the list elements for later use and reference
-names(l.phases) <- sample.name[1:2]
+names(l.phases) <- c(sample.name[1:2],sampleName[2])
 
-writeLines("Performing Watson test to check if the average peak of 24h-rhythms in Beau and Ophio-cflo differs significantly")
-# For all rhy genes
-beau.ophio <- watson.two.test(l.phases[[1]],l.phases[[2]], alpha = FDR/100)
-writeLines("Beau v. Ophio-cflo")
-beau.ophio %>% print()
+# writeLines("Performing Watson test to check if the average peak of 24h-rhythms in Beau and Ophio-cflo differs significantly")
+# # For all rhy genes
+# beau.ophio <- watson.two.test(l.phases[[1]],l.phases[[2]], alpha = FDR/100)
+# writeLines("Beau v. Ophio-cflo")
+# beau.ophio %>% print()
 
 ## Plot the phase distributions
 
@@ -347,7 +413,8 @@ for(i in 1:length(l.phases)) {
     
     xlab(c(names(l.phases)[i])) +
     
-    scale_y_continuous(breaks = c(0,300,600), limits = c(0,700)) +
+    scale_y_continuous(n.breaks = 3) +
+    # scale_y_continuous(breaks = c(0,300,600), limits = c(0,700)) +
     
     coord_polar() +
     theme_Publication(base_size = 20) +
@@ -359,7 +426,7 @@ for(i in 1:length(l.phases)) {
 }
 
 ggpubr::ggarrange(plotlist=g,
-                  nrow = 1, ncol = 2,
+                  nrow = 3, ncol = 1,
                   widths = c(1,1), labels = NA)
 
 ```
@@ -373,7 +440,10 @@ ggpubr::ggarrange(plotlist=g,
 #### Beau - 24h
 
 ```{r beau_clusters}
-  
+
+### Gene set of interest 2 ###
+gsoi.2 <- list()
+
 for (i in 1:n_clusters){
   
   writeLines(paste0("Species: ", sample.name[[1]], "\n", "24h-rhythmic genes, Cluster: ", i))
@@ -383,24 +453,55 @@ for (i in 1:n_clusters){
   writeLines(paste0("n(genes) = ", length(genes),"\n"))
   
   # Enrichment
-  overrepresented.terms <-
+  gsoi.2[[i]] <-
     genes %>% 
       check_enrichment(.,
-                    function.dir = path_to_repo,
                     what = "pfams",
                     org = sample.name[[1]],
                     bg = expressed[[1]],
                     filter = T,
-                    plot = F)
-  writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
-  print(overrepresented.terms %>% as_tibble())
+                    plot = F,
+                    expand = T) %>% 
+    
+    # nothing much to talk about things that have no annotations ---
+    filter(annot_desc!="no_desc") %>%
+    
+    # save the results to a file
+    arrange(annot_desc)
+    
+  # writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(gsoi.2[[i]]), "\n"))
+  # print(overrepresented.terms[[i]] %>% as_tibble())
 
   # Stacked zplot
   genes %>% 
-  stacked.zplot_tc6(cond = "beau") %>% 
+  stacked.zplot_tc6(cond = "beau", plot.mean = F) %>% 
     multi.plot(rows = 1, cols = 1)
   
+  # MAKE THE SUPP FILE
+  gsoi.2[[i]] <-
+    annots[[1]] %>%
+    select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>% 
+    filter(gene_name %in% genes) %>%  # change here
+    left_join(gsoi.2[[i]][,c(1,3)], by="gene_name") %>%  # change here
+    select(gene_name, gene_desc, enriched_annot=annot_desc, everything()) %>%
+    # mutate(enriched_annot=as.factor(enriched_annot)) %>% 
+    arrange(enriched_annot)
 }
+
+## Save results of not_expressed genes into an excel file
+supp <- list(
+  "rhy24_beau_cluster1" = gsoi.2[[1]],
+  "rhy24_beau_cluster2" = gsoi.2[[2]],
+  "rhy24_beau_cluster3" = gsoi.2[[3]],
+  "rhy24_beau_cluster4" = gsoi.2[[4]]
+  )
+writexl::write_xlsx(supp,
+                    path = paste0(path_to_repo,"/results/00_supplementary_files/02_gsoi_rhy24_beau.xlsx"
+                                  ))
+
+# update counter
+counter <- counter+1
+
 
 ```
 
@@ -408,6 +509,9 @@ for (i in 1:n_clusters){
 #### Ophio-cflo - 24h
 
 ```{r ophio_clusters}
+
+### Gene set of interest 3 ###
+gsoi.3 <- list()
 
 for (i in 1:n_clusters){
   
@@ -418,7 +522,7 @@ for (i in 1:n_clusters){
   writeLines(paste0("n(genes) = ", length(genes),"\n"))
   
   # Enrichment
-  overrepresented.terms <-
+  gsoi.3[[i]] <-
     genes %>% 
       check_enrichment(.,
                     function.dir = path_to_repo,
@@ -426,9 +530,16 @@ for (i in 1:n_clusters){
                     org = sample.name[[2]],
                     bg = expressed[[2]],
                     filter = T,
-                    plot = F)
-  writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
-  print(overrepresented.terms %>% as_tibble())
+                    plot = F,
+                    expand = T) %>% 
+    
+    # nothing much to talk about things that have no annotations ---
+    filter(annot_desc!="no_desc") %>%
+    # save the results to a file
+    arrange(annot_desc)
+  
+  # writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(gsoi.3[[i]]), "\n"))
+  # print(overrepresented.terms %>% as_tibble())
   
   # Stacked zplot
       stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]]) %>% pluck(1)
@@ -437,8 +548,32 @@ for (i in 1:n_clusters){
                     nrow = 1, ncol = 2,
                     widths = c(1,1), labels = NA) %>% 
         print()
-  
+      
+      
+  # MAKE THE SUPP FILE
+  gsoi.3[[i]] <-
+    annots[[2]] %>%
+    select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>% 
+    filter(gene_name %in% genes) %>%  # change here
+    left_join(gsoi.3[[i]][,c(1,3)], by="gene_name") %>%  # change here
+    select(gene_name, gene_desc, enriched_annot=annot_desc, everything()) %>%
+    # mutate(enriched_annot=as.factor(enriched_annot)) %>% 
+    arrange(enriched_annot)
 }
+
+## Save results of not_expressed genes into an excel file
+supp <- list(
+  "rhy24_ophio_cluster1" = gsoi.2[[1]],
+  "rhy24_ophio_cluster2" = gsoi.2[[2]],
+  "rhy24_ophio_cluster3" = gsoi.2[[3]],
+  "rhy24_ophio_cluster4" = gsoi.2[[4]]
+  )
+writexl::write_xlsx(supp,
+                    path = paste0(path_to_repo,"/results/00_supplementary_files/03_gsoi_rhy24_ophio.xlsx"
+                                  ))
+
+# update counter
+counter <- counter+1
 
 ```
 
@@ -483,6 +618,7 @@ homology.dat <-
 writeLines(paste("Of the", length(expressed[[2]]), "genes expressed in Ophio-cflo,",
                  "and", length(expressed[[1]]), "genes expressed in Beau,\n",
                  nrow(homology.dat), "genes show one-to-one orthology"))
+
 
 ```
 
@@ -529,14 +665,75 @@ for (i in 1:2){
 
 ```
 
+### Rhy24 genes w/o orthologs
 
-### Rhy24 genes w/ orthologs
+First, let's explore the genes that are 24h-rhythmic in a fungal species but lack a one-to-one ortholog in the other species.
+
+```{r not_ortho_rhy24}
+
+### Gene set of interest 4 ###
+gsoi.4 <- list()
+
+rhy.not.homolog <- list()
+
+## loop starts
+for(i in 1:2){
+  # save the names of genes 
+  rhy.not.homolog[[i]] <- setdiff(rhy[[i]], homology.dat[[i]])
+  
+  # run enrichment
+  gsoi.4[[i]] <- 
+  rhy.not.homolog[[i]] %>% 
+    check_enrichment(.,
+                     org=sample.name[[i]],
+                     expand = T,
+                     what = "pfams") %>% 
+    
+    # nothing much to talk about things that have no annotations ---
+    filter(annot_desc!="no_desc") %>%
+    
+    # save the results to a file
+    arrange(annot_desc)
+    
+    # filter(annot_desc=="Enterotoxin_a") %>% 
+    # pull(gene_name) %>% 
+    # stacked.zplot_tc6(cond="ophio",plot.mean = F, bg.alpha = 0.5)
+    
+    # print()
+  
+  # MAKE THE SUPP FILE
+  gsoi.4[[i]] <-
+    annots[[i]] %>%
+    select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>% 
+    filter(gene_name %in% rhy.not.homolog[[i]]) %>%  # change here
+    left_join(gsoi.4[[i]][,c(1,3)], by="gene_name") %>%  # change here
+    select(gene_name, gene_desc, enriched_annot=annot_desc, everything()) %>%
+    # mutate(enriched_annot=as.factor(enriched_annot)) %>% 
+    arrange(enriched_annot)
+  
+  
+}
+## loop ends  
+  
+## Save results of not_expressed genes into an excel file
+supp <- list(
+  "rhy24_beau_no_ortholog" = gsoi.4[[1]],
+  "rhy24_ophio_no_ortholog" = gsoi.4[[2]])
+writexl::write_xlsx(supp,
+                    path = paste0(path_to_repo,
+                                  "/results/00_supplementary_files/04_gsoi_rhy24_beau_ophio_not_ortholog.xlsx"))
+# update counter
+counter <- counter+1
+
+```
+
+
+### Rhy24 genes with orthologs
 
 Next, I wanted to see if certain gene clusters show a characteristic difference in their daily expression in a species-specific manner (meaning, same genes but different daily expression in the two fungal species?).
 
 To do so, I performed hierarchical clustering of all orthologous genes that show sig. 24h rhythms in EITHER Ocflo OR Beau to identify clusters of genes that show a synchronized expression in each of the two fungal species.
 
-#### STOPPED HERE!!!
 
 ```{r ortho_rhy24}
 rhy.homology.dat <- 
@@ -629,8 +826,13 @@ pheatmap(zscore.rhy.homology.dat, show_rownames = F, show_colnames = F,
 
 ```{r ortho_rhy_zplots}
 
-sampleName <- c("ophio_cflo","ophio_ophio-infected")
+### Gene set of interest 5 ###
+gsoi.5 <- list()
+gsoi.5.beau <- list()
+gsoi.5.ophio <- list()
 
+sampleName <- c("ophio_cflo","ophio_ophio-infected")
+## loop starts
 for (j in 1:2) {
   
   for (i in 1:n_clusters){
@@ -653,37 +855,126 @@ for (j in 1:2) {
       bg.genes <- homology.dat %>% pull(beau_gene) %>% unique()
     }
     
-    # Enrichment
-    overrepresented.terms <-
+    if(j==1) {
+    # Enrichment - beau
+    gsoi.5.beau[[i]] <-
       genes %>% 
         check_enrichment(.,
-                      function.dir = path_to_repo,
                       what = "pfams",
                       org = sample.name[[j]],
                       bg = expressed[[j]],
                       filter = T,
-                      plot = F)
-    print(overrepresented.terms)
-    writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
+                      expand = T,
+                      plot = T) %>% 
     
-    # Stacked zplot
-    if (j==2) {
-      # Stacked zplot
-      stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]]) %>% pluck(1)
-      stacked.plot2 <- genes %>% stacked.zplot_tc6(cond = sampleName[[2]]) %>% pluck(1)
-      ggpubr::ggarrange(plotlist=list(stacked.plot1, stacked.plot2),
-                    nrow = 1, ncol = 2,
-                    widths = c(1,1), labels = NA) %>% 
-        print()
+    # print(overrepresented.terms)
+    # writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
+      
+    # nothing much to talk about things that have no annotations ---
+    filter(annot_desc!="no_desc") %>%
+    # save the results to a file
+    arrange(annot_desc)
+    
     } else {
-    genes %>% 
-    stacked.zplot_tc6(cond = sample.name[[j]]) %>% 
-      multi.plot(rows = 1, cols = 1)
+    # Enrichment - Ophio
+    gsoi.5.ophio[[i]] <-
+      genes %>% 
+        check_enrichment(.,
+                      what = "pfams",
+                      org = sample.name[[j]],
+                      bg = expressed[[j]],
+                      filter = T,
+                      expand = T,
+                      plot = T) %>% 
+    
+    # print(overrepresented.terms)
+    # writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
+      
+    # nothing much to talk about things that have no annotations ---
+    filter(annot_desc!="no_desc") %>%
+    # save the results to a file
+    arrange(annot_desc)
+    
+    # MAKE THE SUPP FILE
+    gsoi.5[[i]] <-
+      annots[[2]] %>%
+      select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>%
+      filter(gene_name %in% genes) %>%  # change here
+      left_join(gsoi.5.ophio[[i]][,c(1,3)], by="gene_name") %>%  # change here
+      select(ophio_gene=gene_name, 
+             gene_desc, enriched_annot=annot_desc, everything()) %>%
+      # mutate(enriched_annot=as.factor(enriched_annot)) %>%
+      arrange(enriched_annot) %>% 
+        
+        ## add cluster information
+        mutate(clusterID = paste0("cluster_",i)) %>% 
+        
+        ## add homology data from beau
+        left_join(homology.dat, by=c("ophio_gene")) %>% 
+        
+        ## add rhythmicity data - ophio_cflo
+        left_join(rhy.24.sig[[2]] %>% 
+                    select(ophio_gene=ID, ophio_pval=GammaP) %>% 
+                    mutate(ophio_rhy24 = ifelse(ophio_pval < FDR/100, "yes", "no")),
+                  by=c("ophio_gene")) %>% 
+        
+        ## add rhythmicity data - beau
+        left_join(rhy.24.sig[[1]] %>% 
+                    select(beau_gene=ID, beau_pval=GammaP) %>% 
+                    mutate(beau_rhy24 = ifelse(beau_pval < FDR/100, "yes", "no")),
+                  by=c("beau_gene")) %>% 
+        
+        ## arrange the columns
+        select(ophio_gene, gene_desc, clusterID, enriched_annot, 
+               ophio_rhy24, beau_rhy24, GOs:TMHMM, everything()) %>% 
+        
+        ## arrange by enriched_annot
+        arrange(enriched_annot)
+        
+        
+    
     }
+    
+    
+    # # Stacked zplot
+    # if (j==2) {
+    #   # Stacked zplot
+    #   stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]]) %>% pluck(1)
+    #   stacked.plot2 <- genes %>% stacked.zplot_tc6(cond = sampleName[[2]]) %>% pluck(1)
+    #   ggpubr::ggarrange(plotlist=list(stacked.plot1, stacked.plot2),
+    #                 nrow = 1, ncol = 2,
+    #                 widths = c(1,1), labels = NA) %>% 
+    #     print()
+    # } else {
+    # genes %>% 
+    # stacked.zplot_tc6(cond = sample.name[[j]]) %>% 
+    #   multi.plot(rows = 1, cols = 1)
+    # }
+  
   }
 }
 
+#################
+### loop ends ###
+#################
+
+## Save results of not_expressed genes into an excel file
+  supp <- list(
+    "ortholog_cluster1" = gsoi.5[[1]],
+    "ortholog_cluster2" = gsoi.5[[2]],
+    "ortholog_cluster3" = gsoi.5[[3]],
+    "ortholog_cluster4" = gsoi.5[[4]])
+  writexl::write_xlsx(supp,
+                      path = paste0(path_to_repo,
+                                    "/results/00_supplementary_files/05_gsoi_rhy24_beau_ophio_ortholog.xlsx"))
+  # update counter
+  counter <- counter+1
+
 ```
+
+
+> MAKE SUPP FILES; STOPPED HERE !!!
+
 
 ### Overlap b/n clusters and rhy24
 
@@ -797,21 +1088,6 @@ ocflo.annots <- read.csv(paste0(path_to_repo, "/data/ophio_cflo_TC6_data.csv"), 
 ocflo.annots %<>% 
   filter(expressed=="yes") %>%
   select(gene_name = gene_ID_ncbi, gene_ID_robin, blast_annot, GammaP_24h, GOs:ophio_kim_homolog)
-
-## Subset the gene_names
-ocflo.annots %>%
-  filter(gene_name %in% cluster.dat[[4]]) %>%
-
-  # plot the q-values
-  ggplot() +
-  geom_density(aes(x=GammaP_24h)) +
-  labs(x="rhythmicity, 24h (q-value)") +
-  scale_x_continuous(breaks = c(0,0.05, 0.1, 0.5, 1)) +
-  theme_Publication()
-  
-  # which genes?
-  # filter(!is.na(GOs)) %>% 
-  # view()
 
 
 ## Check these genes for other annotations (signalP, SSP, TMHMM)
@@ -938,8 +1214,6 @@ ocflo.control.dat <-
 
 ## DATASET 2
 ## Load the O.cflo infection data from the mixed transcriptomics study (from TC7)
-inf.db <- dbConnect(RSQLite::SQLite(),
-                   paste0(path_to_repo,"/../Das_et_al_2022b/data/databases/TC7_data.db"))
 # src_dbi(inf.db)
 # extract the (gene-expr X time-point) data
 ocflo.inf.dat <-
@@ -1170,14 +1444,22 @@ Let's plot the daily expression of the DEGs (ocflo controls v. during infection)
 
 ```{r clustering_degs}
 
-## Get the ocflo infection timecourse data (zscores)
-zscore.inf.dat <- inf.db %>% tbl(., paste0(sampleName[[2]], "_zscores")) %>% collect()
-colnames(zscore.inf.dat)[-1] <- paste0("ZT",meta[meta$cond==sampleName[[2]],] %>% pull(sample))
+## Get the ocflo infection timecourse data (log2fpkm)
+inf.dat <- inf.db %>% tbl(., paste0(sampleName[[2]], "_log2fpkm")) %>% collect()
+colnames(inf.dat)[-1] <- paste0("ZT",meta[meta$cond==sampleName[[2]],] %>% pull(sample))
+
+## Get the ocflo CONTROL timecourse data (log2fpkm)
+control.dat <- data.db %>% tbl(., paste0(sampleName[[1]], "_log2fpkm")) %>% collect()
+colnames(control.dat)[-1] <- paste0("ZT",meta[meta$cond==sampleName[[1]],] %>% pull(sample))
+
 
 ## Specify parameters
 n_clusters <- 4
-which.degs <- list(inf.up, inf.down, manip.up, manip.down)
-names(which.degs) <- c("inf.up", "inf.down", "manip.up", "manip.down")
+which.degs <- list(inf.up, inf.down)
+names(which.degs) <- c("inf.up", "inf.down")
+
+# which.degs <- list(inf.up, inf.down, manip.up, manip.down)
+# names(which.degs) <- c("inf.up", "inf.down", "manip.up", "manip.down")
   
 for (i in 1:length(which.degs)) {
     
@@ -1187,23 +1469,23 @@ for (i in 1:length(which.degs)) {
     which.genes <- which.degs[[i]]
     
     ### Make the dataframe for plotting
-    zscore.deg.dat <-
-      zscore.dat[[2]] %>% 
+    deg.dat <-
+      control.dat %>% 
       filter(gene_name %in% which.genes) %>% 
       # add data from infection
-      left_join(zscore.inf.dat, by="gene_name") %>% 
+      left_join(inf.dat, by="gene_name") %>% 
       # drop any genes without expression values (NA)
       na.omit() %>% 
       as.data.frame() %>% 
       # set genes as rownames
-      column_to_rownames("gene_name")
+      column_to_rownames("gene_name") 
     
     # Set genes as rownames and convert it into a matrix
     # rownames(zscore.rhy.homology.dat) = zscore.rhy.homology.dat$gene_name
-    zscore.deg.dat <- as.matrix(zscore.deg.dat)
+    deg.dat <- as.matrix(deg.dat)
     
     # Hierarchical clustering of the genesets
-    my_hclust_gene <- hclust(dist(zscore.deg.dat), method = "complete")
+    my_hclust_gene <- hclust(dist(deg.dat), method = "complete")
     
     # Make annotations for the heatmaps
     my_clusters <- cutree(tree = as.dendrogram(my_hclust_gene), k = n_clusters) # k= number of clusters
@@ -1215,23 +1497,23 @@ for (i in 1:length(which.degs)) {
     # 1. Is the sample collected during the light or dark phase? 
     my_sample_col <- data.frame(phase = rep(rep(c("light", "dark", "light"),c(5,6,1)),2),
                                 conds = rep(c("ocflo_controls", "ocflo_infection"), each=12))
-    row.names(my_sample_col) <- colnames(zscore.deg.dat)
+    row.names(my_sample_col) <- colnames(deg.dat)
     
     # Manual color palette
     my_colour = list(
       phase = c(light = "#F2E18D", dark = "#010440"),
-      conds = c(ocflo_controls = col.scheme[[2]], ocflo_infection = col.scheme[[4]]),
+      conds = c(ocflo_controls = col.scheme[[2]], ocflo_infection = col.scheme[[3]]),
       cluster = viridis::cividis(100)[c(seq(10,80,by=round(80/(n_clusters), 0)))])
     
     # Color scale
-    my.breaks = seq(min(zscore.deg.dat), max(zscore.deg.dat), by=0.1)
+    my.breaks = seq(min(deg.dat), max(deg.dat), by=2)
     # my.breaks = seq(min(zscore.rhy), max(zscore.rhy), by=0.06)
     
     # Let's plot!
-    pheatmap(zscore.deg.dat, show_rownames = F, show_colnames = F,
+    pheatmap(deg.dat, show_rownames = F, show_colnames = F,
                annotation_row = my_gene_col, 
                annotation_col = my_sample_col,
-               cutree_rows = n_clusters, # OG was 4
+               # cutree_rows = n_clusters, # OG was 4
                # cutree_cols = 2,
                gaps_col = c(12,24),
                annotation_colors = my_colour,
@@ -1243,7 +1525,7 @@ for (i in 1:length(which.degs)) {
                treeheight_row = 0,
                # treeheight_col = 0,
                # remove the color scale or not
-               main = paste0("DEGs - ",names(which.degs)[[i]], "\n (n=",nrow(zscore.deg.dat), " genes)"),
+               main = paste0("DEGs - ",names(which.degs)[[i]], "\n (n=",nrow(deg.dat), " genes)"),
                ## annotation legend
                annotation_legend = T,
                ## Color scale
@@ -1251,39 +1533,122 @@ for (i in 1:length(which.degs)) {
       print() 
     
     
-    for (j in 1:n_clusters){
-    
-    writeLines(paste0("Which DEGs: ", names(which.degs)[[i]], "\n", "Cluster: ", j))
-    
-    # Summary
-    genes <- my_gene_col %>% rownames_to_column("g") %>% filter(cluster==as.character(j)) %>% pull(g)
-    writeLines(paste0("n(genes) = ", length(genes),"\n"))
-    
-    # define the background geneset for enrichment analysis
-    bg.genes <- all.DEGs %>% pull(gene_name)
-    
-    # Enrichment
-    overrepresented.terms <-
-      genes %>% 
-        check_enrichment(.,
-                      function.dir = path_to_repo,
-                      what = "pfams",
-                      org = sampleName[[1]],
-                      bg = bg.genes,
-                      filter = T,
-                      plot = F)
-    writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
-    
-    # Stacked zplot
-    stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]]) %>% pluck(1)
-    stacked.plot2 <- genes %>% stacked.zplot_tc6(cond = sampleName[[2]]) %>% pluck(1)
-    ggpubr::ggarrange(plotlist=list(stacked.plot1, stacked.plot2),
-                  nrow = 1, ncol = 2,
-                  widths = c(1,1), labels = NA) %>% 
-      print()
-    
-  }
+  #   for (j in 1:n_clusters){
+  #   
+  #   writeLines(paste0("Which DEGs: ", names(which.degs)[[i]], "\n", "Cluster: ", j))
+  #   
+  #   # Summary
+  #   genes <- my_gene_col %>% rownames_to_column("g") %>% filter(cluster==as.character(j)) %>% pull(g)
+  #   writeLines(paste0("n(genes) = ", length(genes),"\n"))
+  #   
+  #   # define the background geneset for enrichment analysis
+  #   bg.genes <- all.DEGs %>% pull(gene_name)
+  #   
+  #   # Enrichment
+  #   overrepresented.terms <-
+  #     genes %>% 
+  #       check_enrichment(.,
+  #                     what = "pfams",
+  #                     org = sampleName[[1]],
+  #                     bg = bg.genes,
+  #                     filter = T,
+  #                     expand = T,
+  #                     plot = T)
+  #   
+  #   # writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
+  #   # overrepresented.terms %>% print()
+  #   
+  #   # Stacked zplot
+  #   stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]]) %>% pluck(1)
+  #   stacked.plot2 <- genes %>% stacked.zplot_tc6(cond = sampleName[[2]]) %>% pluck(1)
+  #   ggpubr::ggarrange(plotlist=list(stacked.plot1, stacked.plot2),
+  #                 nrow = 1, ncol = 2,
+  #                 widths = c(1,1), labels = NA) %>% 
+  #     print()
+  #   
+  # }
  
 }
 
 ```
+
+## 7. Enriched functions of these DEGs
+
+```{r enrichments_degs}
+
+# define the background for enrichment analyses
+bg.genes <- rownames(emat)
+
+### Gene set of interest 6 ###
+gsoi.6 <- list()
+
+## loop begins
+for (i in 1:length(which.degs)) {
+  
+  gsoi.6[[i]] <- 
+    which.degs[[i]] %>% 
+    check_enrichment(.,
+                     org = "ophio_cflo",
+                     bg = bg.genes,
+                     what = "pfams",
+                     expand = T) %>% 
+    # nothing much to talk about things that have no annotations ---
+    filter(annot_desc!="no_desc") %>%
+    # save the results to a file
+    arrange(annot_desc)
+    
+  # MAKE THE SUPP FILE
+  gsoi.6[[i]] <-
+    annots[[2]] %>% 
+    select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>% 
+    filter(gene_name %in% which.degs[[i]]) %>%  # change here
+    left_join(gsoi.6[[i]][,c(1,3)], by="gene_name") %>%  # change here
+    select(gene_name, gene_desc, enriched_annot=annot_desc, everything()) %>%
+    # mutate(enriched_annot=as.factor(enriched_annot)) %>% 
+    arrange(enriched_annot) %>% 
+    
+    ## add DEG analyses data
+      left_join(all.DEGs %>% 
+                  select(gene_name, 
+                         abs_log2FC = logFC,
+                         inf_v_control, BH_pval = adj.P.Val),
+                by=c("gene_name")) %>% 
+      mutate(abs_log2FC = abs(abs_log2FC)) %>% 
+      select(ophio_gene=gene_name, everything()) %>% 
+      
+      ## add rhythmicity data - ophio_cflo - controls
+        left_join(rhy.24.sig[[2]] %>% 
+                    select(ophio_gene=ID, control_pval=GammaP) %>% 
+                    mutate(control_rhy24 = ifelse(control_pval < FDR/100, "yes", "no")),
+                  by=c("ophio_gene")) %>% 
+        
+      ## add rhythmicity data - ophio_cflo - infected
+        left_join(rhy.24.sig[[3]] %>% 
+                    select(ophio_gene=ID, inf_pval=GammaP) %>% 
+                    mutate(inf_rhy24 = ifelse(inf_pval < FDR/100, "yes", "no")),
+                  by=c("ophio_gene")) %>% 
+      
+      ## arrange the columns
+        select(ophio_gene, gene_desc, inf_v_control, abs_log2FC,
+               enriched_annot, 
+               control_rhy24, inf_rhy24, GOs:TMHMM, everything()) %>% 
+      
+      ## arrange by enriched_annot
+       arrange(inf_v_control, desc(abs_log2FC), enriched_annot) 
+    
+  }
+## loop ends
+
+## Save results of not_expressed genes into an excel file
+supp <- list(
+  "UP_DEG_ophio_control_v_inf" = gsoi.6[[1]],
+  "DOWN_DEG_ophio_control_v_inf" = gsoi.6[[2]])
+writexl::write_xlsx(supp,
+                    path = paste0(path_to_repo,
+                                  "/results/00_supplementary_files/06_gsoi_DEG_ophio_control_v_inf.xlsx"))
+# update counter
+counter <- counter+1
+
+```
+
+

@@ -1021,8 +1021,8 @@ stacked.zplot_tc7 <-
 
 stacked.zplot_tc6 <- function(gene_names, 
                               cond = "ophio_cflo", 
-                              period = "24",
                               verbose = F,
+                              plot.mean = T,
                               clean = F,
                               lwd=1.5, 
                               alpha=0.75, 
@@ -1059,7 +1059,7 @@ stacked.zplot_tc6 <- function(gene_names,
     ## PREP THE DATASETS ##
     
     ## save the list of gene names in a character vector
-    g <- unique(gene_names)
+    g <- unique(as.character(gene_names))
     
     ## Read the zscores for all conditions
     # specify sample name
@@ -1075,29 +1075,33 @@ stacked.zplot_tc6 <- function(gene_names,
     
     ## Read rhythmic genes for all conditions
     # specify periodicity of daily rhythms
-    period = period
+    period = c("24","12","08")
     rhy <- list()
-    for (i in 1:length(sample.name)){
-      if (i == 3){
-        rhy[[i]] <-
-          tbl(inf.ejtk.db, paste0(sample.name[[i]],"_zscores_",period[[1]],'h')) %>%
-          filter(GammaP < gamma.pval) %>%
-          select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
-          select(ID) %>% pull()
-      } else {
-        rhy[[i]] <-
-          tbl(ejtk.db, paste0(sample.name[[i]],"_zscores_",period,'h')) %>%
-          filter(GammaP < gamma.pval) %>%
-          select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
-          select(ID) %>% pull()
-      }
-    }
+    
+    # get the rhythmic genes for each treatment (i), for a given periodicity (j)
+    for (j in 1:length(period)) {
+      rhy.sub <- list()
       
-    if (verbose==T) {
-      # How many genes are rythmic?
-      writeLines(paste0("sample: ", sample.name[[i]]))
-      writeLines(paste0("n(",period, "h-rhy-genes) in test set", " : ", length(rhy[[i]])))
-    }
+      for (i in 1:length(sample.name)){
+        if (i == 3){
+          rhy.sub[[i]] <-
+            tbl(inf.ejtk.db, paste0(sample.name[[i]],"_zscores_",period[[j]],'h')) %>%
+            filter(GammaP < gamma.pval) %>%
+            select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
+            select(ID) %>% pull()
+        } else {
+          rhy.sub[[i]] <-
+            tbl(ejtk.db, paste0(sample.name[[i]],"_zscores_",period[[j]],'h')) %>%
+            filter(GammaP < gamma.pval) %>%
+            select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>%
+            select(ID) %>% pull()
+        }
+      }
+      rhy[[j]] <- rhy.sub
+      names(rhy)[j] <- paste0(period[[j]],"h")
+      
+  }
+    
     
   
     ## Specify color scheme
@@ -1122,7 +1126,9 @@ stacked.zplot_tc6 <- function(gene_names,
       
       col.scheme <- col.scheme[1]
       conds <- conds[1]
-      rhy.genes <- rhy[[1]]
+      rhy.24 <- rhy[["24h"]][[1]]
+      rhy.12 <- rhy[["12h"]][[1]]
+      rhy.08 <- rhy[["08h"]][[1]]
       
       } else if (cond == "ophio" | cond == "ophio_cflo" | cond == "a"){
       dummy <- 
@@ -1135,7 +1141,9 @@ stacked.zplot_tc6 <- function(gene_names,
       
       col.scheme <- col.scheme[2]
       conds <- conds[2]
-      rhy.genes <- rhy[[2]]
+      rhy.24 <- rhy[["24h"]][[2]]
+      rhy.12 <- rhy[["12h"]][[2]]
+      rhy.08 <- rhy[["08h"]][[2]]
       
     } else if (cond == "inf" | cond == "inf_ophio_cflo" | cond == "ophio_ophio-infected"){
       dummy <- 
@@ -1148,7 +1156,9 @@ stacked.zplot_tc6 <- function(gene_names,
       
       col.scheme <- col.scheme[3]
       conds <- conds[3]
-      rhy.genes <- rhy[[3]]
+      rhy.24 <- rhy[["24h"]][[3]]
+      rhy.12 <- rhy[["12h"]][[3]]
+      rhy.08 <- rhy[["08h"]][[3]]
       
     # } else if (cond == "all" | cond == "tc6" | cond == "TC6" | cond == "ab") {
     #   dummy <- rbind(dummy.beau, dummy.ocflo)
@@ -1179,65 +1189,135 @@ stacked.zplot_tc6 <- function(gene_names,
     # Let's plot
     pd <- position_dodge(0.2)
     
-    l <- lapply(sort(unique(dummy[[4]])), function(i) {
-      
-      # Define the dataset
-      ggplot() + 
+    if (plot.mean==T) {
+      l <- lapply(sort(unique(dummy[[4]])), function(i) {
         
-        # indicate light-dark phase
-        geom_rect(aes(xmin = 11.5, xmax = 23.5, ymin = -Inf, ymax = Inf),
-                  fill = "lightgrey", alpha = 0.3, color=NA) +
-        
-        # Plot the individual gene expressions (zscores)
-        geom_line(data=dummy[dummy$cond==i,], 
-                  aes(x=as.numeric(as.character(ZT)), y=zscore, group = gene_name),
-                  size=0.5, alpha=bg.alpha, 
-                  col = "grey60"
-                  # col = ifelse(i==sample.name[1], c(col.scheme[[1]]),
-                  #              ifelse(i==sample.name[2], c(col.scheme[[2]]),
-                  #                     ifelse(i==sample.name[3], c(col.scheme[[3]]),
-                  #                            c(col.scheme[[1]], col.scheme[[2]], col.scheme[[3]]))))
-        ) +
-        
-        # Plot the mean gene expression for the given gene list
-        geom_line(data = dummy.summary[dummy.summary$cond == i,],
-                  aes(x=as.numeric(as.character(ZT)), y=mean_zscore), 
-                  col = col.scheme[i],
-                  # col = "#3C3C40",
-                  size = lwd, alpha = alpha) +
-        
-        
-        # Set the theme
-        xlab("") +
-        ylab("") +
-        
-        # provide all rhythmicity info in the title
-        labs(
-          title = paste0(round(length(unique(intersect(rhy.genes,g)))/length(g)*100,0), "% ",period,"h")
-          # subtitle = "",
-          # caption = ""
+        # Define the dataset
+        ggplot() + 
+          
+          # indicate light-dark phase
+          geom_rect(aes(xmin = 11.5, xmax = 23.5, ymin = -Inf, ymax = Inf),
+                    fill = "lightgrey", alpha = 0.3, color=NA) +
+          
+          # Plot the individual gene expressions (zscores)
+          geom_line(data=dummy[dummy$cond==i,], 
+                    aes(x=as.numeric(as.character(ZT)), y=zscore, group = gene_name),
+                    size=0.5, alpha=bg.alpha, 
+                    col = "grey60"
+                    # col = ifelse(i==sample.name[1], c(col.scheme[[1]]),
+                    #              ifelse(i==sample.name[2], c(col.scheme[[2]]),
+                    #                     ifelse(i==sample.name[3], c(col.scheme[[3]]),
+                    #                            c(col.scheme[[1]], col.scheme[[2]], col.scheme[[3]]))))
           ) +
+          
+          # Plot the mean gene expression for the given gene list
+          geom_line(data = dummy.summary[dummy.summary$cond == i,],
+                    aes(x=as.numeric(as.character(ZT)), y=mean_zscore), 
+                    col = col.scheme[i],
+                    # col = "#3C3C40",
+                    size = lwd, alpha = alpha) +
+          
+          
+          # Set the theme
+          xlab("") +
+          ylab("") +
+          
+          # provide all rhythmicity info in the title
+          labs(
+            title = paste0(round(length(unique(intersect(rhy.24,g)))/length(g)*100,0), "% ",period[[1]],"h"),
+            # subtitle = "",
+            caption = paste0(round(length(unique(intersect(rhy.12,g)))/length(g)*100,0), "% ",period[[2]],"h",
+                             "; ",
+                             round(length(unique(intersect(rhy.08,g)))/length(g)*100,0), "% ",period[[3]],"h")
+          ) +
+          
+          theme_Publication() +
+          scale_x_continuous(breaks = c(0,4,8,12,16,20,24)) +
+          scale_y_continuous(limits = c(min(dummy[[3]]),max(dummy[[3]])),
+                             breaks = c(-2,0,2)) + 
+          theme(text = element_text(size = 20, colour = 'black'),
+                axis.title.x=element_blank(),
+                # axis.text.x=element_blank(),
+                legend.position = "none") +
+          # set transparency
+          theme( 
+            panel.grid.minor = element_blank(),
+            panel.grid.major = element_blank(),
+            panel.background = element_rect(fill = "transparent",colour = NA),
+            plot.background = element_rect(fill = "transparent",colour = NA)) 
+        # show only a subset of the y-axis tick labels
+        # theme(axis.text.y=element_text(color=c("transparent","black","transparent",
+        #                                        "transparent","black","transparent",
+        #                                        "transparent","transparent","transparent",
+        #                                        "black")))
+      })
+    } else {
+      
+      l <- lapply(sort(unique(dummy[[4]])), function(i) {
         
-        theme_Publication() +
-        scale_x_continuous(breaks = c(0,4,8,12,16,20,24)) +
-        scale_y_continuous(limits = c(min(dummy[[3]]),max(dummy[[3]])),
-                           breaks = c(-2,0,2)) + 
-        theme(text = element_text(size = 20, colour = 'black'),
-              axis.title.x=element_blank(),
-              # axis.text.x=element_blank(),
-              legend.position = "none") +
-        # set transparency
-        theme( 
-          panel.grid.minor = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.background = element_rect(fill = "transparent",colour = NA),
-          plot.background = element_rect(fill = "transparent",colour = NA)) 
-      # show only a subset of the y-axis tick labels
-      # theme(axis.text.y=element_text(color=c("transparent","black","transparent",
-      #                                        "transparent","black","transparent",
-      #                                        "transparent","transparent","transparent",
-      #                                        "black")))
-    })
+        # Define the dataset
+        ggplot() + 
+          
+          # indicate light-dark phase
+          geom_rect(aes(xmin = 11.5, xmax = 23.5, ymin = -Inf, ymax = Inf),
+                    fill = "lightgrey", alpha = 0.3, color=NA) +
+          
+          # Plot the individual gene expressions (zscores)
+          geom_line(data=dummy[dummy$cond==i,], 
+                    aes(x=as.numeric(as.character(ZT)), y=zscore, group = gene_name),
+                    size=0.5, alpha=bg.alpha, 
+                    col = col.scheme[i]
+                    # col = ifelse(i==sample.name[1], c(col.scheme[[1]]),
+                    #              ifelse(i==sample.name[2], c(col.scheme[[2]]),
+                    #                     ifelse(i==sample.name[3], c(col.scheme[[3]]),
+                    #                            c(col.scheme[[1]], col.scheme[[2]], col.scheme[[3]]))))
+          ) +
+          
+          # # Plot the mean gene expression for the given gene list
+          # geom_line(data = dummy.summary[dummy.summary$cond == i,],
+          #           aes(x=as.numeric(as.character(ZT)), y=mean_zscore), 
+          #           col = col.scheme[i],
+          #           # col = "#3C3C40",
+          #           size = lwd, alpha = alpha) +
+          
+          
+          # Set the theme
+          xlab("") +
+          ylab("") +
+          
+          # provide all rhythmicity info in the title
+          labs(
+            title = paste0(round(length(unique(intersect(rhy.24,g)))/length(g)*100,0), "% ",period[[1]],"h"),
+            # subtitle = "",
+            caption = paste0(round(length(unique(intersect(rhy.12,g)))/length(g)*100,0), "% ",period[[2]],"h",
+                             "; ",
+                             round(length(unique(intersect(rhy.08,g)))/length(g)*100,0), "% ",period[[3]],"h")
+          ) +
+          
+          theme_Publication() +
+          scale_x_continuous(breaks = c(0,4,8,12,16,20,24)) +
+          scale_y_continuous(limits = c(min(dummy[[3]]),max(dummy[[3]])),
+                             breaks = c(-2,0,2)) + 
+          theme(text = element_text(size = 20, colour = 'black'),
+                axis.title.x=element_blank(),
+                # axis.text.x=element_blank(),
+                legend.position = "none") +
+          # set transparency
+          theme( 
+            panel.grid.minor = element_blank(),
+            panel.grid.major = element_blank(),
+            panel.background = element_rect(fill = "transparent",colour = NA),
+            plot.background = element_rect(fill = "transparent",colour = NA)) 
+        # show only a subset of the y-axis tick labels
+        # theme(axis.text.y=element_text(color=c("transparent","black","transparent",
+        #                                        "transparent","black","transparent",
+        #                                        "transparent","transparent","transparent",
+        #                                        "black")))
+      })
+      
+    }
+    
+    
     
     # return the list with all the plots and the data frame containing   
     return(l);
