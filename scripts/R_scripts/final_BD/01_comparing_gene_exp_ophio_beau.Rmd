@@ -36,7 +36,7 @@ pacman::p_load(RSQLite, tidyverse, dbplyr, DT, conflicted)
 pacman::p_load(patchwork, glue)
 pacman::p_load(circular)
 pacman::p_load(writexl)
-nolibrary(timecourseRnaseq)
+library(timecourseRnaseq)
 
 ## set conflict preference
 conflict_prefer("select", "dplyr", quiet = T)
@@ -194,17 +194,57 @@ for (i in 1:length(sample.name)) {
   
 }
 ### loop ENDS
-## Save results of not_expressed genes into an excel file
-supp <- list(
-  "not_expressed_beau" = gsoi.1[[1]],
-  "not_expressed_ophio" = gsoi.1[[2]])
-writexl::write_xlsx(supp,
-                    path = paste0(path_to_repo,"/results/00_supplementary_files/01_gsoi_not_expressed_beau_ophio.xlsx"
-                                  )
-                    )
-# update counter
-counter <- counter+1
-  
+# ## Save results of not_expressed genes into an excel file
+# supp <- list(
+#   "not_expressed_beau" = gsoi.1[[1]],
+#   "not_expressed_ophio" = gsoi.1[[2]])
+# writexl::write_xlsx(supp,
+#                     path = paste0(path_to_repo,"/results/00_supplementary_files/01_gsoi_not_expressed_beau_ophio.xlsx"
+#                                   )
+#                     )
+# # update counter
+# counter <- counter+1
+
+### QUERY ###
+#
+### Enterotoxin genes that are not expressed in cultures; are they expressed, even lowly, during infection?
+#
+## ocflo genes are expressed during infection (fpkm ≥ 1 for at least one time point)
+expressed.ophio.inf <-
+  tbl(inf.db, paste0(sampleName[[2]],"_expressed_genes")) %>% 
+    filter(expressed=="yes") %>% 
+    collect() %>% 
+    pull(gene_name)
+## ocflo genes not expressed during infection (fpkm = 0)
+not.expressed.ophio.inf <-
+  tbl(inf.db, paste0(sampleName[[2]] ,"_fpkm")) %>% 
+    collect() %>% 
+    filter_at(vars(starts_with("Z")), all_vars(. == 0)) %>%
+    pull(gene_name)
+## check intersection (are some expressed?)
+g <- setdiff((gsoi.1[[2]] %>% filter(enriched_annot=="Enterotoxin_a") %>% pull(gene_name)), not.expressed.ophio.inf)
+# intersect(g, expressed.ophio.inf) # all three are lowly expressed during infection
+#
+### result:
+# two of the five show no expression during infeccion
+# three others show only low expression (0 < fpkm < 1)
+### query ends
+
+
+### QUERY ###
+#
+### p450 genes that are not expressed in cultures; are they expressed, even lowly, during infection?
+#
+## check intersection (are some expressed?)
+g <- setdiff((gsoi.1[[2]] %>% filter(enriched_annot=="p450") %>% pull(gene_name)), not.expressed.ophio.inf)
+# intersect(g, expressed.ophio.inf) # all three are lowly expressed during infection
+#
+### result:
+# five of the seven show no expression during infeccion
+# two others show only low expression (0 < fpkm < 1)
+### query ends
+
+
 # B: genes that are expressed (FPKM > 1 for at least one time point)
 expressed <- list()
 for (i in 1:length(sample.name)) {
@@ -217,6 +257,12 @@ for (i in 1:length(sample.name)) {
   # How many genes are expressed?
   writeLines(paste("n(EXPRESSED) in", sample.name[[i]], ":", length(expressed[[i]])))
 }
+
+expressed.okim <-
+  tbl(data.db, paste0("ophio_kim","_expressed_genes")) %>% 
+    filter(expressed=="yes") %>% 
+    collect() %>% 
+    pull(gene_name)
 
 ```
 
@@ -245,10 +291,15 @@ for (i in 1:2) {
   writeLines(paste0("n(rhythmic-",period, "h) in ", sample.name[[i]], " : ", length(rhy[[i]])))
 }
 
-
+rhy24.okim <-
+  tbl(ejtk.db, paste0("ophio_kim_LD","_zscores_",period,'h')) %>%
+    filter(GammaP < gamma.pval) %>% 
+    select(ID, GammaP) %>% collect() %>% arrange(GammaP) %>% 
+    select(ID) %>% pull()
 
 ```
 
+___
 
 ### Hierarchical clustering of rhy24
 
@@ -336,7 +387,7 @@ for (i in 1:2) {
 
 ### Phase plots
 
-```{r phase_plots}
+```{r phase_plots_1}
 
 rhy.24.sig <- list()
 phase.ejtk <- list()
@@ -371,7 +422,8 @@ for (i in 1:3) {
 # save all the circular phases in a list
 l.phases <- phase.ejtk
 # let's name the list elements for later use and reference
-names(l.phases) <- c(sample.name[1:2],sampleName[2])
+names(l.phases) <- c(sample.name[1:2],sampleName[2]) # includes ocflo during infection
+# names(l.phases) <- c(sample.name[1:2]) # does not have ocflo infection data
 
 # writeLines("Performing Watson test to check if the average peak of 24h-rhythms in Beau and Ophio-cflo differs significantly")
 # # For all rhy genes
@@ -426,7 +478,7 @@ for(i in 1:length(l.phases)) {
 }
 
 ggpubr::ggarrange(plotlist=g,
-                  nrow = 3, ncol = 1,
+                  nrow = 1, ncol = 2,
                   widths = c(1,1), labels = NA)
 
 ```
@@ -439,65 +491,67 @@ ggpubr::ggarrange(plotlist=g,
 
 #### Beau - 24h
 
+> Not going to discuss this in primary text; only as a supplementary file
+
 ```{r beau_clusters}
 
-### Gene set of interest 2 ###
-gsoi.2 <- list()
-
-for (i in 1:n_clusters){
-  
-  writeLines(paste0("Species: ", sample.name[[1]], "\n", "24h-rhythmic genes, Cluster: ", i))
-  
-  # Summary
-  genes <- my_gene_col[[1]] %>% rownames_to_column("g") %>% filter(cluster==as.character(i)) %>% pull(g)
-  writeLines(paste0("n(genes) = ", length(genes),"\n"))
-  
-  # Enrichment
-  gsoi.2[[i]] <-
-    genes %>% 
-      check_enrichment(.,
-                    what = "pfams",
-                    org = sample.name[[1]],
-                    bg = expressed[[1]],
-                    filter = T,
-                    plot = F,
-                    expand = T) %>% 
-    
-    # nothing much to talk about things that have no annotations ---
-    filter(annot_desc!="no_desc") %>%
-    
-    # save the results to a file
-    arrange(annot_desc)
-    
-  # writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(gsoi.2[[i]]), "\n"))
-  # print(overrepresented.terms[[i]] %>% as_tibble())
-
-  # Stacked zplot
-  genes %>% 
-  stacked.zplot_tc6(cond = "beau", plot.mean = F) %>% 
-    multi.plot(rows = 1, cols = 1)
-  
-  # MAKE THE SUPP FILE
-  gsoi.2[[i]] <-
-    annots[[1]] %>%
-    select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>% 
-    filter(gene_name %in% genes) %>%  # change here
-    left_join(gsoi.2[[i]][,c(1,3)], by="gene_name") %>%  # change here
-    select(gene_name, gene_desc, enriched_annot=annot_desc, everything()) %>%
-    # mutate(enriched_annot=as.factor(enriched_annot)) %>% 
-    arrange(enriched_annot)
-}
-
-## Save results of not_expressed genes into an excel file
-supp <- list(
-  "rhy24_beau_cluster1" = gsoi.2[[1]],
-  "rhy24_beau_cluster2" = gsoi.2[[2]],
-  "rhy24_beau_cluster3" = gsoi.2[[3]],
-  "rhy24_beau_cluster4" = gsoi.2[[4]]
-  )
-writexl::write_xlsx(supp,
-                    path = paste0(path_to_repo,"/results/00_supplementary_files/02_gsoi_rhy24_beau.xlsx"
-                                  ))
+# ### Gene set of interest 2 ###
+# gsoi.2 <- list()
+# 
+# for (i in 1:n_clusters){
+#   
+#   writeLines(paste0("Species: ", sample.name[[1]], "\n", "24h-rhythmic genes, Cluster: ", i))
+#   
+#   # Summary
+#   genes <- my_gene_col[[1]] %>% rownames_to_column("g") %>% filter(cluster==as.character(i)) %>% pull(g)
+#   writeLines(paste0("n(genes) = ", length(genes),"\n"))
+#   
+#   # Enrichment
+#   gsoi.2[[i]] <-
+#     genes %>% 
+#       check_enrichment(.,
+#                     what = "pfams",
+#                     org = sample.name[[1]],
+#                     bg = expressed[[1]],
+#                     filter = T,
+#                     plot = T,
+#                     expand = T) %>% 
+#     
+#     # nothing much to talk about things that have no annotations ---
+#     filter(annot_desc!="no_desc") %>%
+#     
+#     # save the results to a file
+#     arrange(annot_desc)
+#     
+#   # writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(gsoi.2[[i]]), "\n"))
+#   # print(overrepresented.terms[[i]] %>% as_tibble())
+# 
+#   # Stacked zplot
+#   genes %>% 
+#   stacked.zplot_tc6(cond = "beau", plot.mean = F) %>% 
+#     multi.plot(rows = 1, cols = 1)
+#   
+#   # MAKE THE SUPP FILE
+#   gsoi.2[[i]] <-
+#     annots[[1]] %>%
+#     select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>% 
+#     filter(gene_name %in% genes) %>%  # change here
+#     left_join(gsoi.2[[i]][,c(1,3)], by="gene_name") %>%  # change here
+#     select(gene_name, gene_desc, enriched_annot=annot_desc, everything()) %>%
+#     # mutate(enriched_annot=as.factor(enriched_annot)) %>% 
+#     arrange(enriched_annot)
+# }
+# 
+# ## Save results of not_expressed genes into an excel file
+# supp <- list(
+#   "rhy24_beau_cluster1" = gsoi.2[[1]],
+#   "rhy24_beau_cluster2" = gsoi.2[[2]],
+#   "rhy24_beau_cluster3" = gsoi.2[[3]],
+#   "rhy24_beau_cluster4" = gsoi.2[[4]]
+#   )
+# writexl::write_xlsx(supp,
+#                     path = paste0(path_to_repo,"/results/00_supplementary_files/02_gsoi_rhy24_beau.xlsx"
+#                                   ))
 
 # update counter
 counter <- counter+1
@@ -508,10 +562,13 @@ counter <- counter+1
 
 #### Ophio-cflo - 24h
 
+> GOAL: Which cluster(s) contains the rhy24-genes overlapping between Ocflo and Okim?
+
 ```{r ophio_clusters}
 
 ### Gene set of interest 3 ###
 gsoi.3 <- list()
+l.phases <- list()
 
 for (i in 1:n_clusters){
   
@@ -522,54 +579,315 @@ for (i in 1:n_clusters){
   writeLines(paste0("n(genes) = ", length(genes),"\n"))
   
   # Enrichment
-  gsoi.3[[i]] <-
+  if(i==3) {
+    gsoi.3[[i]] <-
     genes %>% 
       check_enrichment(.,
                     function.dir = path_to_repo,
-                    what = "pfams",
+                    # what = "pfams",
+                    what = "GOs",
                     org = sample.name[[2]],
                     bg = expressed[[2]],
                     filter = T,
                     plot = F,
+                    # plot = T,
                     expand = T) %>% 
     
     # nothing much to talk about things that have no annotations ---
     filter(annot_desc!="no_desc") %>%
     # save the results to a file
-    arrange(annot_desc)
+    arrange(annot_desc) %>% 
+    as.data.frame()
+  } else {
+    gsoi.3[[i]] <-
+    genes %>% 
+      check_enrichment(.,
+                    function.dir = path_to_repo,
+                    what = "pfams",
+                    # what = "GOs",
+                    org = sample.name[[2]],
+                    bg = expressed[[2]],
+                    filter = T,
+                    plot = F,
+                    # plot = T,
+                    expand = T) %>% 
+    
+    # nothing much to talk about things that have no annotations ---
+    filter(annot_desc!="no_desc") %>%
+    # save the results to a file
+    arrange(annot_desc) %>% 
+    as.data.frame()
+    
+  }
+  
   
   # writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(gsoi.3[[i]]), "\n"))
   # print(overrepresented.terms %>% as_tibble())
   
   # Stacked zplot
-      stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]]) %>% pluck(1)
-      stacked.plot2 <- genes %>% stacked.zplot_tc6(cond = sampleName[[2]]) %>% pluck(1)
-      ggpubr::ggarrange(plotlist=list(stacked.plot1, stacked.plot2),
-                    nrow = 1, ncol = 2,
+      stacked.plot1 <- genes %>% stacked.zplot_tc6(cond = sampleName[[1]], plot.mean = F) %>% pluck(1)
+      # stacked.plot2 <- genes %>% stacked.zplot_tc6(cond = sampleName[[2]]) %>% pluck(1)
+      ggpubr::ggarrange(plotlist=list(stacked.plot1),
+                    nrow = 1, ncol = 1,
                     widths = c(1,1), labels = NA) %>% 
         print()
       
       
+  # phase plots
+      
+    ## Phase plot ends
+    rhy.24.sig <- 
+        tbl(ejtk.db, paste0(sample.name[2],"_zscores_24h")) %>% 
+        filter(GammaP < gamma.pval) %>% 
+        filter(ID %in% genes) %>% 
+      collect()
+    
+    # Get the phases of the best matched waveforms
+    phase.ejtk <- circular::circular(rhy.24.sig$Phase, units="hours", template="clock24")
+  
+    # save all the circular phases in a list
+    l.phases[[i]] <- phase.ejtk
+    # let's name the list elements for later use and reference
+    names(l.phases)[[i]] <- paste0(sample.name[[2]],"_cluster-",i)
+  
+    means <- as.numeric(mean(phase.ejtk))
+    means <- circular(means, units="hours", template="clock24")
+  
+    
+    # define phase levels
+    ordered_phases <- c("2","4","6","8","10","12",
+                        "14","16","18","20","22","24")
+      
+    df.test <-
+      l.phases[[i]] %>%
+      as.data.frame() %>% 
+      mutate(phase = x) %>%
+      mutate(phase = replace(phase, x=="0", "24")) %>% 
+      select(-x) %>% 
+      mutate(phase=factor(phase, levels = ordered_phases, labels = ordered_phases)) %>%
+      group_by(phase) %>%
+      summarise(n_genes = n()) %>% 
+      arrange(phase)
+  
+    m <- as.numeric(means)
+      
+    g <-
+      ggplot(df.test, aes(x=phase, y=n_genes)) + 
+      # indicate light-dark phase
+      geom_rect(aes(xmin = as.factor(12), xmax = as.factor(24), ymin = -Inf, ymax = Inf),
+                fill = "grey80", alpha = 0.05, color=NA) +
+      geom_bar(stat='identity', fill=col.scheme[[2]]) +
+      
+      xlab(c(names(l.phases)[[i]])) +
+      
+      # scale_y_continuous(n.breaks = 3) +
+      # scale_y_continuous(breaks = c(0,300,600), limits = c(0,700)) +
+      
+      scale_x_discrete(limits = ordered_phases) +
+      
+      coord_polar(theta = "x", direction = 1, start = 0.25) +
+      theme_Publication(base_size = 20) +
+      theme(# axis.title.x=element_blank(),
+                # axis.text.x=element_blank(),
+                legend.position = "none")
+    
+    print(g)
+  ###  
+  ### Phase plot ends
+  
+      
   # MAKE THE SUPP FILE
+  if (nrow(gsoi.3[[i]])!=0) {
   gsoi.3[[i]] <-
     annots[[2]] %>%
     select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>% 
-    filter(gene_name %in% genes) %>%  # change here
+    filter(gene_name %in% genes) %>% # change here
     left_join(gsoi.3[[i]][,c(1,3)], by="gene_name") %>%  # change here
     select(gene_name, gene_desc, enriched_annot=annot_desc, everything()) %>%
     # mutate(enriched_annot=as.factor(enriched_annot)) %>% 
     arrange(enriched_annot)
+  } else {
+    gsoi.3[[i]] <-
+    annots[[2]] %>%
+    select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>% 
+    filter(gene_name %in% genes) %>% # change here
+    mutate(annot_desc=NA) %>% 
+    select(gene_name, gene_desc, enriched_annot=annot_desc, everything()) %>%
+    # mutate(enriched_annot=as.factor(enriched_annot)) %>% 
+    arrange(enriched_annot)
+  }
 }
 
+
+```
+
+___
+
+### Overlap between ocflo and okim
+
+```{r overlap_ophios}
+
+## read the ocflo to okim homology data
+ocflo.okim.homology <-
+  read.csv(paste0(path_to_repo, "/supplement/1_Supplementary_file_ophio_cflo_TC6_data.csv"),
+           header = T, stringsAsFactors = F) %>% as_tibble() %>% 
+  select(ocflo_gene=gene_ID_ncbi, ophio_kim_homolog) %>% 
+  left_join(ophio_kim_annots[1:2], by=c("ophio_kim_homolog"="sc16a_gene")) %>% 
+  select(ocflo_gene, okim_gene=gene_name) %>% 
+  na.omit() %>% 
+  distinct()
+
+# define gene sets for fisher's test
+set1 <- unique(rhy[[2]]) # rhy24 in ocflo
+set2 <- ocflo.okim.homology %>% filter(okim_gene %in% rhy24.okim) %>% pull(ocflo_gene) %>% unique() # rhy24 in okim
+
+## Are the 24h-rhythmic genes in ocflo and okim similar?
+fishers_overlap(set1, 
+                set2,
+                bg.genes = max(length(expressed[[2]]), length(expressed.okim)))
+
+## What is enriched in the 24h-rhythmic genes overlapping in Ocflo and Okim?
+intersect(set1, set2) %>% 
+  check_enrichment(.,
+                   org = "ophio_cflo",
+                   what = "pfams", 
+                   bg = "all", # because homologs are identified in the entire genome of the fungus, not only expressed genes!
+                   expand = F)
+  
+```
+
+### Unique rhy ocflo / okim
+
+What are the functions of the genes that show sig. 24h-rhythms uniquely in one species and not the other?
+
+We explore functions of the genes that are rhythmic in Okim but not in Ocflo.
+
+```{r not_overlap_ophios}
+
+# ## rhy-unique-ocflo
+# # pfams1 <- 
+#   setdiff(set1, set2) %>% 
+#   check_enrichment(.,
+#                    org = "ophio_cflo",
+#                    what = "GOs", expand = F, verbose = T) %>% view()
+
+## rhy-unique-okim
+# pfams2 <- 
+  setdiff(set2, set1) %>%
+  check_enrichment(.,
+                   org = "ophio_cflo",
+                   what = "pfams", 
+                   bg = "all", # because homologs are identified in the entire genome of the fungus, not only expressed genes!
+                   expand = T) %>% 
+  arrange(annot_desc)
+  # filter(annot_desc == "GMC_oxred_N; GMC_oxred_C")
+  # filter(annot_desc == "p450")
+  # filter(annot_desc == "FAD_binding_3")
+  # filter(annot_desc == "Kinase-like")
+  # filter(annot_desc == "Enterotoxin_a")
+
+### NO SIGNIFICANT OVERLAP BETWEEN pfams1 and pfams2 (no overlapping pfams found; I checked.)
+
+```
+
+What about the rhythmic genes in Ocflo that do not have a homolog in Okim?
+
+```{r not_overlap_ophios_2}
+# setdiff(set1, ocflo.okim.homology %>% pull(ocflo_gene)) %>%
+#   check_enrichment(.,
+#                    org = "ophio_cflo",
+#                    what = "pfams",
+#                    bg = "all", # because homologs are identified in the entire genome of the fungus, not only expressed genes!
+#                    expand = T) %>%
+#   arrange(annot_desc)
+
+```
+
+> 115 such genes, but no enriched pfams.
+
+### Which clusters?
+
+Are these overlapping genes day- or night-active in Ocflo?
+
+```{r overlap_ophios_clusters}
+
+clusters <- list()
+for (i in 1:n_clusters) {
+  clusters[[i]] <- my_gene_col[[2]] %>% rownames_to_column("g") %>% filter(cluster==as.character(i)) %>% pull(g)
+  names(clusters)[[i]] <- paste0("Ocflo_24_cluster-",i)
+}
+
+overlaps <- list()
+overlaps[[1]] <- intersect(set1,set2)
+overlaps[[2]] <- setdiff(set1,set2) # rhy in Ocflo but not in Okim
+overlaps[[3]] <- setdiff(set1, ocflo.okim.homology %>% pull(ocflo_gene)) # rhy in Ocflo but do not have an homolog in Okim
+names(overlaps) <- c("rhy_in_both", "rhy_in_Ocflo_only", "rhy_in_Ocflo_no_homolog")
+
+## Pairwise Fisher's exact test to check for sig. overlap
+bg.genes <- expressed[[2]] %>% unique() %>% length() # all expressed genes in Ocflo
+
+#### SAVE FIGURE ####
+check_overlap(overlaps, clusters, bg.genes)
+
+```
+
+> The results suggest that the homologous genes that oscillate in both Ophio species do not show a specific time-of-day of activity (e.g., day or night-active); rather these genes are distributed throughout.
+
+___
+
+### Save Supp. file 3
+
+```{r saving_supp_3}
+
+# sheet1
+# all ocflo_annots file with okim homology, okim rhythmicity, ocflo rhythmicity data
+
+gsoi.3[[5]] <- 
+  ophio_cflo_annots %>% 
+  
+  ## add okim homolog name, if exists (if not, NA)
+  left_join(ocflo.okim.homology, by=c("gene_name"="ocflo_gene")) %>% 
+  select(ocflo_gene = gene_name, okim_homolog=okim_gene, everything()) %>% 
+  
+  ## add ocflo_rhy_data (options: yes, NA)
+  mutate(rhy24_ocflo = ifelse(ocflo_gene %in% rhy[[2]], "yes",NA)) %>% 
+  
+  ## add okim rhy data
+  mutate(rhy24_okim = ifelse(okim_homolog %in% rhy24.okim, "yes",NA)) %>% 
+  arrange(rhy24_ocflo,rhy24_okim) %>% 
+  
+  
+  select(ocflo_gene, okim_homolog, rhy24_ocflo, rhy24_okim, gene_desc, GOs:TMHMM,
+         ocflo_arb2_gene = arb2_gene, okim_sc16a_homolog = sc16a_homolog)
+
+
+# sheets: 2 to 5
+# genes in each cluster separately
+
+for (i in 1:4) {
+  gsoi.3[[i]] <- 
+    gsoi.3[[5]] %>% 
+    
+    filter(ocflo_gene %in% gsoi.3[[i]][[1]]) %>% 
+    
+    left_join(gsoi.3[[i]][,c(1,3)], by=c("ocflo_gene"="gene_name")) %>% 
+    mutate(ocflo_24h_cluster = as.character(i)) %>% 
+    
+    select(-rhy24_ocflo) %>% 
+    select(ocflo_24h_cluster, ocflo_gene:gene_desc, enriched_annot, everything()) %>% 
+    arrange(enriched_annot, rhy24_okim)  
+  }
+  
 ## Save results of not_expressed genes into an excel file
 supp <- list(
-  "rhy24_ophio_cluster1" = gsoi.2[[1]],
-  "rhy24_ophio_cluster2" = gsoi.2[[2]],
-  "rhy24_ophio_cluster3" = gsoi.2[[3]],
-  "rhy24_ophio_cluster4" = gsoi.2[[4]]
+  "ocflo_okim_homolog_rhy24" = gsoi.3[[5]],
+  "rhy24_ocflo_cluster1" = gsoi.3[[1]],
+  "rhy24_ocflo_cluster2" = gsoi.3[[2]],
+  "rhy24_ocflo_cluster3" = gsoi.3[[3]],
+  "rhy24_ocflo_cluster4" = gsoi.3[[4]]
   )
 writexl::write_xlsx(supp,
-                    path = paste0(path_to_repo,"/results/00_supplementary_files/03_gsoi_rhy24_ophio.xlsx"
+                    path = paste0(path_to_repo,"/results/00_supplementary_files/03_gsoi_rhy24_ocflo_okim.xlsx"
                                   ))
 
 # update counter
@@ -577,7 +895,9 @@ counter <- counter+1
 
 ```
 
-> reducing redundant GO terms
+
+
+> SIDE NOTE: reducing redundant GO terms
 
 _Note to self:_ If we use GO terms instead of pfams, we will need to reduce the redundant GO annotations that is present in fungal annotation data.
 
@@ -615,9 +935,9 @@ homology.dat <-
   filter(n()==1) %>% 
   select(beau_gene, ophio_gene)
 
-writeLines(paste("Of the", length(expressed[[2]]), "genes expressed in Ophio-cflo,",
-                 "and", length(expressed[[1]]), "genes expressed in Beau,\n",
-                 nrow(homology.dat), "genes show one-to-one orthology"))
+writeLines(paste("Of the", length(unique(ophio_cflo_annots[["gene_name"]])), "genes annotated in Ophio-cflo genome,",
+                 "and", length(unique(beau_annots[["gene_name"]])), "genes annotated in Beau genome,\n",
+                 nrow(distinct(homology.dat)), "genes show one-to-one orthology"))
 
 
 ```
@@ -633,7 +953,7 @@ for (i in 1:2){
   ortho.dat <- homology.dat %>% pull(i) 
 
   listInput <- list(rhy.dat, ortho.dat)
-  names(listInput) <- c(paste0(sample.name[[i]], c("_rhy24","_ortho")))
+  names(listInput) <- c(paste0(sample.name[[i]],"_rhy24"),"is_an_ortholog")
   
   library(UpSetR)
   library(viridis)

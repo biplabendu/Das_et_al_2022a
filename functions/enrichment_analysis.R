@@ -279,126 +279,126 @@
 
 # 2. plotting GO enrichments ----------------------------------------------
 
-go_enrichment_plot <- function(data, 
-                               function.dir = ".",
-                               category, 
-                               fdr=5, 
-                               clean="yes") {
-
-  source(paste0(function.dir,"/functions/theme_publication.R"))
-
-  #Save the data to an object
-  df <- data
-
-  # Let's read the file with all Cflo GO terms and their categories
-  cflo_gos <- read.csv(paste0(function.dir,"/functions/func_data/distinct_gos_namespace.csv"), header = T, stringsAsFactors = F)
-  cflo_gos <- cflo_gos %>%
-    dplyr::select(1:3) %>%
-    dplyr::select(GO = "GOTerm.identifier", GO_category = "GOTerm.namespace")
-
-  cflo_gos[cflo_gos$GO_category=="biological_process",]$GO_category <- "BP"
-  cflo_gos[cflo_gos$GO_category=="cellular_component",]$GO_category <- "CP"
-  cflo_gos[cflo_gos$GO_category=="molecular_function",]$GO_category <- "MF"
-
-  col.scheme <- c("#143740",
-                  "#286E80",
-                  "#3BA4BF",
-                  "#4FDBFF",
-                  "#47C5E6")
-
-
-  #Format the dataframe
-  df <- df %>%
-    # only keep the over-enriched terms
-    filter(over_under == "over") %>%
-    # remove the NA term
-    filter(GO_desc != "NA") %>%
-    # set FDR at 1%
-    filter(adj_pVal < (fdr/100)) %>%
-    # add the rhythmicity scores
-    mutate(score = -log(adj_pVal)) %>%
-    # add a column containing the GO categories
-    left_join(cflo_gos, by="GO") %>%
-    # reorder the cols
-    dplyr::select(GO, GO_category, everything())
-
-
-  goplot <- ggplot(df) +
-    # set overall appearance of the plot
-    theme_Publication() +
-    # Define the dependent and independent variables
-    aes(x = reorder(GO_desc, score), y = score, fill=GO_category) +
-    # Add a line showing the alpha = 0.01 level
-    geom_hline(yintercept = -log(0.01), size = 1.2, color = "#C7D7D9", alpha=0.8) +
-    # From the defined variables, create a vertical bar chart
-    geom_col(position = "dodge", alpha=0.9, size = 1) +
-    # Set main and axis titles
-    # ggtitle(paste0("GO enrichment | FDR = ",fdr,"%")) +
-    xlab("GOs") +
-    # add caption
-    labs(
-      # title = paste0("GO enrichment | FDR = ",fdr,"%"),
-      # subtitle = sub,
-      caption = "*vertical line denotes FDR of 1%") +
-    ylab(expression(-log[10]*' '*q[enriched])) +
-    # # add annotations
-    # ggrepel::geom_label_repel(aes(label = paste(round((n_GO_DEG/n_GO*100),2), "%", paste(" of ",n_GO,sep=""), sep="")),
-    #                           fill = "transparent",
-    #                           color = 'black',
-    #                           size = 3,
-    #                           direction = "x",
-    #                           ylim=c(10,max(df$score)),
-    #                           point.padding = 0.25,
-    #                           label.padding = 0.25,
-    #                           segment.color = 'transparent',
-    #                           # get rid of the outline for the label
-  #                           label.size = NA) +
-  theme(legend.position = "bottom") +
-    ylim(c(0,max(df$score)+2)) +
-    # Add facetting for each GO category
-    facet_grid(GO_category ~ ., scales = "free_y", space = "free_y") +
-    # Shorten very long labels (GO descriptions)
-    scale_x_discrete(label = function(x) stringr::str_trunc(x, 35)) +
-    # Flip the x and y axes
-    coord_flip() +
-    scale_fill_manual(values= setNames(col.scheme, levels(df$GO_category))) +
-    # scale_fill_manual(values = setNames(c("lightblue", "darkgreen"), levels(tstat$Hemisphere)))
-    theme(strip.background = element_blank(), strip.text = element_blank(), # get rid of facet grid labels
-          plot.title = element_text(hjust = 0.5),
-          axis.line.y = element_line(colour = "transparent",
-                                     size=1),
-          legend.title = element_blank(),
-          # legend.position = "None",
-          plot.caption = element_text(hjust=1),
-          axis.title.y = element_blank()) +
-    guides(
-      fill = guide_legend(
-        title = "Legend Title",
-        override.aes = aes(label = "")))
-
-  if (clean == "yes") {
-    goplot <- goplot
-  }
-
-  else(
-    goplot <- goplot +
-      # add annotations
-      ggrepel::geom_label_repel(aes(label = paste(round((n_GO_DEG/n_GO*100),2), "%", paste(" of ",n_GO,sep=""), sep="")),
-                                fill = "transparent",
-                                color = 'black',
-                                size = 3,
-                                direction = "x",
-                                ylim=c(10,max(df$score)),
-                                point.padding = 0.25,
-                                label.padding = 0.25,
-                                segment.color = 'transparent',
-                                # get rid of the outline for the label
-                                label.size = NA)
-  )
-
-
-  return(goplot)
-}
+# go_enrichment_plot <- function(data, 
+#                                function.dir = ".",
+#                                category, 
+#                                fdr=5, 
+#                                clean="yes") {
+# 
+#   source(paste0(function.dir,"/functions/theme_publication.R"))
+# 
+#   #Save the data to an object
+#   df <- data
+# 
+#   # Let's read the file with all Cflo GO terms and their categories
+#   cflo_gos <- read.csv(paste0(function.dir,"/functions/func_data/distinct_gos_namespace.csv"), header = T, stringsAsFactors = F)
+#   cflo_gos <- cflo_gos %>%
+#     dplyr::select(1:3) %>%
+#     dplyr::select(GO = "GOTerm.identifier", GO_category = "GOTerm.namespace")
+# 
+#   cflo_gos[cflo_gos$GO_category=="biological_process",]$GO_category <- "BP"
+#   cflo_gos[cflo_gos$GO_category=="cellular_component",]$GO_category <- "CP"
+#   cflo_gos[cflo_gos$GO_category=="molecular_function",]$GO_category <- "MF"
+# 
+#   col.scheme <- c("#143740",
+#                   "#286E80",
+#                   "#3BA4BF",
+#                   "#4FDBFF",
+#                   "#47C5E6")
+# 
+# 
+#   #Format the dataframe
+#   df <- df %>%
+#     # only keep the over-enriched terms
+#     filter(over_under == "over") %>%
+#     # remove the NA term
+#     filter(GO_desc != "NA") %>%
+#     # set FDR at 1%
+#     filter(adj_pVal < (fdr/100)) %>%
+#     # add the rhythmicity scores
+#     mutate(score = -log(adj_pVal)) %>%
+#     # add a column containing the GO categories
+#     left_join(cflo_gos, by="GO") %>%
+#     # reorder the cols
+#     dplyr::select(GO, GO_category, everything())
+# 
+# 
+#   goplot <- ggplot(df) +
+#     # set overall appearance of the plot
+#     theme_Publication() +
+#     # Define the dependent and independent variables
+#     aes(x = reorder(GO_desc, score), y = score, fill=GO_category) +
+#     # Add a line showing the alpha = 0.01 level
+#     geom_hline(yintercept = -log(0.01), size = 1.2, color = "#C7D7D9", alpha=0.8) +
+#     # From the defined variables, create a vertical bar chart
+#     geom_col(position = "dodge", alpha=0.9, size = 1) +
+#     # Set main and axis titles
+#     # ggtitle(paste0("GO enrichment | FDR = ",fdr,"%")) +
+#     xlab("GOs") +
+#     # add caption
+#     labs(
+#       # title = paste0("GO enrichment | FDR = ",fdr,"%"),
+#       # subtitle = sub,
+#       caption = "*vertical line denotes FDR of 1%") +
+#     ylab(expression(-log[10]*' '*q[enriched])) +
+#     # # add annotations
+#     # ggrepel::geom_label_repel(aes(label = paste(round((n_GO_DEG/n_GO*100),2), "%", paste(" of ",n_GO,sep=""), sep="")),
+#     #                           fill = "transparent",
+#     #                           color = 'black',
+#     #                           size = 3,
+#     #                           direction = "x",
+#     #                           ylim=c(10,max(df$score)),
+#     #                           point.padding = 0.25,
+#     #                           label.padding = 0.25,
+#     #                           segment.color = 'transparent',
+#     #                           # get rid of the outline for the label
+#   #                           label.size = NA) +
+#   theme(legend.position = "bottom") +
+#     ylim(c(0,max(df$score)+2)) +
+#     # Add facetting for each GO category
+#     facet_grid(GO_category ~ ., scales = "free_y", space = "free_y") +
+#     # Shorten very long labels (GO descriptions)
+#     scale_x_discrete(label = function(x) stringr::str_trunc(x, 35)) +
+#     # Flip the x and y axes
+#     coord_flip() +
+#     scale_fill_manual(values= setNames(col.scheme, levels(df$GO_category))) +
+#     # scale_fill_manual(values = setNames(c("lightblue", "darkgreen"), levels(tstat$Hemisphere)))
+#     theme(strip.background = element_blank(), strip.text = element_blank(), # get rid of facet grid labels
+#           plot.title = element_text(hjust = 0.5),
+#           axis.line.y = element_line(colour = "transparent",
+#                                      size=1),
+#           legend.title = element_blank(),
+#           # legend.position = "None",
+#           plot.caption = element_text(hjust=1),
+#           axis.title.y = element_blank()) +
+#     guides(
+#       fill = guide_legend(
+#         title = "Legend Title",
+#         override.aes = aes(label = "")))
+# 
+#   if (clean == "yes") {
+#     goplot <- goplot
+#   }
+# 
+#   else(
+#     goplot <- goplot +
+#       # add annotations
+#       ggrepel::geom_label_repel(aes(label = paste(round((n_GO_DEG/n_GO*100),2), "%", paste(" of ",n_GO,sep=""), sep="")),
+#                                 fill = "transparent",
+#                                 color = 'black',
+#                                 size = 3,
+#                                 direction = "x",
+#                                 ylim=c(10,max(df$score)),
+#                                 point.padding = 0.25,
+#                                 label.padding = 0.25,
+#                                 segment.color = 'transparent',
+#                                 # get rid of the outline for the label
+#                                 label.size = NA)
+#   )
+# 
+# 
+#   return(goplot)
+# }
 
 # 4. Checking sig. overlap ----------------------------------------------
 
@@ -1111,3 +1111,39 @@ check_overlap <- function(list1, # first list of genesets
 #'   
 #'   
 #' }
+
+
+# 4. Fishers exact --------------------------------------------------------
+
+fishers_overlap <- function(set.1, set.2, bg.genes=13808) {
+  set.1 <- as.character(set.1) # expressed in control heads
+  set.2 <- as.character(set.2) # expressed in ophio-inf or beau-inf heads
+  
+  tot.genes <- as.numeric(bg.genes) # all genes in the Cflo genome
+  
+  # To create the contingency table for module-7 (set-1) and for.rhy (set-2), we will need the following information:
+  # genes that are in both sets
+  overlapping.genes <- intersect(set.1, set.2) %>% length()
+  # genes in set-1 but not in set-2
+  set.1.not.set.2 <- setdiff(set.1, set.2) %>% length()
+  # genes in set-2 but not in set-1
+  set.2.not.set.1 <- setdiff(set.2, set.1) %>% length()
+  # background genes not in set-1 or set-2
+  not.set.1.set.2 <- tot.genes - (union(set.1, set.2) %>% unique() %>% length())
+  
+  # Contingency table for set.1 and set.2
+  test.table <- 
+    data.frame(
+      in.set.2 = c(overlapping.genes, set.2.not.set.1),
+      not.set.2 = c(set.1.not.set.2, not.set.1.set.2)
+    )
+  rownames(test.table) <- c("in.set.1", "not.set.1")
+  
+  writeLines(paste0("Contingency table:\n"))
+  # take a look at the contingency table
+  test.table %>% print()
+  
+  writeLines(paste0("Running fisher.test() on contingency table:\n"))
+  # fisher test
+  fisher.test(test.table) %>% print()
+}
