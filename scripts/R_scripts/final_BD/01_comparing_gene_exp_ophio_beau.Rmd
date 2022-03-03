@@ -85,6 +85,101 @@ FDR = 5
 ## Set a counter for supplementary excel files
 counter <- 0
 
+## List of metabolic processes (only top level metabolic process GO terms)
+# source: http://www.informatics.jax.org/vocab/gene_ontology/GO:0008150
+
+metabolism.gos <- c(metabolic_process = c("GO:0008152", "GO:0044236", "GO:0044710"),
+                 adaptive_thermogenesis = c("GO:1990845"),
+                 antibiotic_metabolic_process = "GO:0016999",
+                 ATP_metabolic_process = "GO:0046034",
+                 biosynthetic_process = c("GO:0009058", "GO:0044274", "GO:0044711"),
+                 catabolic_process = c("GO:0009056", "GO:0044243", "GO:0044712"),
+                 cellular_metabolic_process = "GO:0044237",
+                 collagen_biosynthesis = "GO:0032964",
+                 collagen_catabolic_process = "GO:0030574",
+                 hormone_biosynthetic_process = "GO:0042446",
+                 hormone_catabolic_process = "GO:0042447",
+                 negative_regulation_of_hormone_metabolism = "GO:0032351",
+                 positive_regulation_of_hormone_metabolism = "GO:0032352",
+                 peptide_hormone_processing = "GO:0016486",
+                 regulation_of_hormone_metabolism = "GO:0032350",
+                 insulin_processing = "GO:0030070",
+                 pheromone_metabolism = "GO:0042810",
+                 carbohydrate_utilization = "GO:0009758")
+
+locomotion.gos <- c(cell_motility = "GO:0048870",
+                    directional_locomotion = "GO:0033058",
+                    flight = "GO:0060361",
+                    locomotory_behavior = c("GO:0031987", "GO:0007626"),
+                    regulation_of_locomotion = "GO:0040012",
+                    multicellular_organismal_locomotion = "GO:0071965",
+                    negative_regulation_of_locomotion = "GO:0040013",
+                    positive_regulation_of_locomotion = "GO:0040017",
+                    taxis = "GO:0042330"
+                    )
+
+immune.gos <- c(immune_system_process = "GO:0002376",
+                activation_of_immune_response = "GO:0002253",
+                negative_regulation_of_immune_system = "GO:0002683",
+                positive_regulation_of_immune_system = "GO:0002684",
+                regulation_of_immune_system = "GO:0002682",
+                immune_effector_process = "GO:0002252",   
+                # Any process of the immune system that executes a component of an immune response. An effector immune process takes place after its activation.
+                immune_response = "GO:0006955",
+                immunological_memory_process = "GO:0090713",
+                tolerance_induction = "GO:0002507",
+                detoxification = "GO:0098754",
+                toxin_catabolic_process = "GO:0009407",
+                xenobiotic_detoxification = c("GO:0140330", "GO:1990961"),
+                nitrogen_utilization = "GO:0019740")
+
+interspecies.gos <- c(interspecies_interaction = c("GO:0044419", "GO:0051703"),
+                      biological_regulation = "GO:0065007",
+                      regulation_of_biological_quality = "GO:0065008",
+                      signaling = c("GO:0023052", "GO:0023046", "GO:0044700"),
+                      viral_process = c("GO:0016032", "GO:0022415"))
+
+behavior.gos <- c(behavior = c("GO:0007610", "GO:0044708"),
+                  rhythmic_behavior = "GO:0007622",
+                  social_behavior = "GO:0035176",
+                  thermosensory_behavior = "GO:0040040",
+                  visual_behavior = "GO:0007632",
+                  aggressive_behavior = "GO:0002118",
+                  behavioral_defense_response = "GO:0002209",
+                  behavioral_response_to_nutrient = "GO:0051780",
+                  response_to_water_deprivation = "GO:0042630",
+                  chemosensory_behavior = "GO:0007635",
+                  olfactory_behavior = "GO:0042048",
+                  exploration_behavior = "GO:0035640",
+                  feeding_behavior = c("GO:0007631", "GO:0044366", "GO:0044367", "GO:0044368",
+                                       "GO:0044369", "GO:0044370", "GO:0044371", "GO:0044372"),
+                  foraging_behavior = c("GO:0060756"),
+                  grooming_behavior = c("GO:0007625"),
+                  host_seeking_behavior = "GO:0032537",
+                  learning_memory = "GO:0007611",
+                  mechanosensory_behavior = "GO:0007638",
+                  response_to_stimulus = c("GO:0050896", "GO:0051869"),
+                  motor_behavior = "GO:0061744",
+                  negative_regulation_of_behavior = "GO:0048521",
+                  positive_regulation_of_behavior = "GO:0048520",
+                  regulation_of_behavior = "GO:0050795",
+                  reproductive_behavior = "GO:0019098",
+                  reproduction = c("GO:0000003", "GO:0019952", "GO:0050876"),
+                  rhythmic_process = "GO:0048511")
+
+gut.microbiota.gos <- c(sulfur_metabolism = "GO:0006790",
+                        sulfur_amino_acid_metabolism = "GO:0000096",
+                        regulation_of_sulfur_metabolism = "GO:0042762",
+                        negative_regulation_of_sulfur_metabolism = "GO:0051175",
+                        positive_regulation_of_sulfur_metabolism = "GO:0051176")
+
+
+list.of.gos <- list("metabolism_gos" = metabolism.gos,
+                    "locomotion_gos" = locomotion.gos,
+                    "immune_gos" = immune.gos,
+                    "interspecies_gos" = interspecies.gos,
+                    "behavior_gos" = behavior.gos)
+
 ```
 
 > Loading databases
@@ -765,11 +860,11 @@ We explore functions of the genes that are rhythmic in Okim but not in Ocflo.
 ```{r not_overlap_ophios}
 
 # ## rhy-unique-ocflo
-# # pfams1 <- 
-#   setdiff(set1, set2) %>% 
-#   check_enrichment(.,
-#                    org = "ophio_cflo",
-#                    what = "GOs", expand = F, verbose = T) %>% view()
+# # pfams1 <-
+# setdiff(set1, set2) %>%
+# check_enrichment(.,
+#                  org = "ophio_cflo",
+# what = "pfams", expand = F, verbose = T)
 
 ## rhy-unique-okim
 # pfams2 <- 
@@ -878,24 +973,22 @@ for (i in 1:4) {
     arrange(enriched_annot, rhy24_okim)  
   }
   
-## Save results of not_expressed genes into an excel file
-supp <- list(
-  "ocflo_okim_homolog_rhy24" = gsoi.3[[5]],
-  "rhy24_ocflo_cluster1" = gsoi.3[[1]],
-  "rhy24_ocflo_cluster2" = gsoi.3[[2]],
-  "rhy24_ocflo_cluster3" = gsoi.3[[3]],
-  "rhy24_ocflo_cluster4" = gsoi.3[[4]]
-  )
-writexl::write_xlsx(supp,
-                    path = paste0(path_to_repo,"/results/00_supplementary_files/03_gsoi_rhy24_ocflo_okim.xlsx"
-                                  ))
+# ## Save results of not_expressed genes into an excel file
+# supp <- list(
+#   "ocflo_okim_homolog_rhy24" = gsoi.3[[5]],
+#   "rhy24_ocflo_cluster1" = gsoi.3[[1]],
+#   "rhy24_ocflo_cluster2" = gsoi.3[[2]],
+#   "rhy24_ocflo_cluster3" = gsoi.3[[3]],
+#   "rhy24_ocflo_cluster4" = gsoi.3[[4]]
+#   )
+# writexl::write_xlsx(supp,
+#                     path = paste0(path_to_repo,"/results/00_supplementary_files/03_gsoi_rhy24_ocflo_okim.xlsx"
+#                                   ))
 
-# update counter
-counter <- counter+1
 
 ```
 
-
+___
 
 > SIDE NOTE: reducing redundant GO terms
 
@@ -909,6 +1002,7 @@ Option #2: Use the scripts provided by REVIGO to programmatically run REVIGO usi
 Status: tried running it via bash, and it didn't work; NEED TO FIGURE IT OUT.
 
 ___
+
 
 ## 3. Beau v. Ophio - 24h-rhy
 
@@ -1006,7 +1100,9 @@ for(i in 1:2){
   rhy.not.homolog[[i]] %>% 
     check_enrichment(.,
                      org=sample.name[[i]],
+                     bg = "all",
                      expand = T,
+                     filter = T,
                      what = "pfams") %>% 
     
     # nothing much to talk about things that have no annotations ---
@@ -1042,8 +1138,7 @@ supp <- list(
 writexl::write_xlsx(supp,
                     path = paste0(path_to_repo,
                                   "/results/00_supplementary_files/04_gsoi_rhy24_beau_ophio_not_ortholog.xlsx"))
-# update counter
-counter <- counter+1
+
 
 ```
 
