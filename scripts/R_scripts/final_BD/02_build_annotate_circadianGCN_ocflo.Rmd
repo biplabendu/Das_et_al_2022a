@@ -51,6 +51,102 @@ source(paste0(path_to_repo,"/functions/theme_publication.R"))
 # function to plot z-scores (Cflo genes only)
 source(paste0(path_to_repo,"/functions/plot_zscores.R"))
 
+## List of metabolic processes (only top level metabolic process GO terms)
+# source: http://www.informatics.jax.org/vocab/gene_ontology/GO:0008150
+
+metabolism.gos <- c(metabolic_process = c("GO:0008152", "GO:0044236", "GO:0044710"),
+                 adaptive_thermogenesis = c("GO:1990845"),
+                 antibiotic_metabolic_process = "GO:0016999",
+                 ATP_metabolic_process = "GO:0046034",
+                 biosynthetic_process = c("GO:0009058", "GO:0044274", "GO:0044711"),
+                 catabolic_process = c("GO:0009056", "GO:0044243", "GO:0044712"),
+                 cellular_metabolic_process = "GO:0044237",
+                 collagen_biosynthesis = "GO:0032964",
+                 collagen_catabolic_process = "GO:0030574",
+                 hormone_biosynthetic_process = "GO:0042446",
+                 hormone_catabolic_process = "GO:0042447",
+                 negative_regulation_of_hormone_metabolism = "GO:0032351",
+                 positive_regulation_of_hormone_metabolism = "GO:0032352",
+                 peptide_hormone_processing = "GO:0016486",
+                 regulation_of_hormone_metabolism = "GO:0032350",
+                 insulin_processing = "GO:0030070",
+                 pheromone_metabolism = "GO:0042810",
+                 carbohydrate_utilization = "GO:0009758")
+
+locomotion.gos <- c(cell_motility = "GO:0048870",
+                    directional_locomotion = "GO:0033058",
+                    flight = "GO:0060361",
+                    locomotory_behavior = c("GO:0031987", "GO:0007626"),
+                    regulation_of_locomotion = "GO:0040012",
+                    multicellular_organismal_locomotion = "GO:0071965",
+                    negative_regulation_of_locomotion = "GO:0040013",
+                    positive_regulation_of_locomotion = "GO:0040017",
+                    taxis = "GO:0042330"
+                    )
+
+immune.gos <- c(immune_system_process = "GO:0002376",
+                activation_of_immune_response = "GO:0002253",
+                negative_regulation_of_immune_system = "GO:0002683",
+                positive_regulation_of_immune_system = "GO:0002684",
+                regulation_of_immune_system = "GO:0002682",
+                immune_effector_process = "GO:0002252",   
+                # Any process of the immune system that executes a component of an immune response. An effector immune process takes place after its activation.
+                immune_response = "GO:0006955",
+                immunological_memory_process = "GO:0090713",
+                tolerance_induction = "GO:0002507",
+                detoxification = "GO:0098754",
+                toxin_catabolic_process = "GO:0009407",
+                xenobiotic_detoxification = c("GO:0140330", "GO:1990961"),
+                nitrogen_utilization = "GO:0019740")
+
+interspecies.gos <- c(interspecies_interaction = c("GO:0044419", "GO:0051703"),
+                      biological_regulation = "GO:0065007",
+                      regulation_of_biological_quality = "GO:0065008",
+                      signaling = c("GO:0023052", "GO:0023046", "GO:0044700"),
+                      viral_process = c("GO:0016032", "GO:0022415"))
+
+behavior.gos <- c(behavior = c("GO:0007610", "GO:0044708"),
+                  rhythmic_behavior = "GO:0007622",
+                  social_behavior = "GO:0035176",
+                  thermosensory_behavior = "GO:0040040",
+                  visual_behavior = "GO:0007632",
+                  aggressive_behavior = "GO:0002118",
+                  behavioral_defense_response = "GO:0002209",
+                  behavioral_response_to_nutrient = "GO:0051780",
+                  response_to_water_deprivation = "GO:0042630",
+                  chemosensory_behavior = "GO:0007635",
+                  olfactory_behavior = "GO:0042048",
+                  exploration_behavior = "GO:0035640",
+                  feeding_behavior = c("GO:0007631", "GO:0044366", "GO:0044367", "GO:0044368",
+                                       "GO:0044369", "GO:0044370", "GO:0044371", "GO:0044372"),
+                  foraging_behavior = c("GO:0060756"),
+                  grooming_behavior = c("GO:0007625"),
+                  host_seeking_behavior = "GO:0032537",
+                  learning_memory = "GO:0007611",
+                  mechanosensory_behavior = "GO:0007638",
+                  response_to_stimulus = c("GO:0050896", "GO:0051869"),
+                  motor_behavior = "GO:0061744",
+                  negative_regulation_of_behavior = "GO:0048521",
+                  positive_regulation_of_behavior = "GO:0048520",
+                  regulation_of_behavior = "GO:0050795",
+                  reproductive_behavior = "GO:0019098",
+                  reproduction = c("GO:0000003", "GO:0019952", "GO:0050876"),
+                  rhythmic_process = "GO:0048511")
+
+gut.microbiota.gos <- c(sulfur_metabolism = "GO:0006790",
+                        sulfur_amino_acid_metabolism = "GO:0000096",
+                        regulation_of_sulfur_metabolism = "GO:0042762",
+                        negative_regulation_of_sulfur_metabolism = "GO:0051175",
+                        positive_regulation_of_sulfur_metabolism = "GO:0051176")
+
+
+list.of.gos <- list("metabolism_gos" = metabolism.gos,
+                    "locomotion_gos" = locomotion.gos,
+                    "immune_gos" = immune.gos,
+                    "interspecies_gos" = interspecies.gos,
+                    "behavior_gos" = behavior.gos)
+
+
 ```
 
 
@@ -594,286 +690,4 @@ foo %>%
 
 ########## Till Here....
 
-
-
-```{r find_genes_in_network_2, eval=F}
-# Specify the path to TC5 repo
-path_to_tc5_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2021"
-# Load the TC5 database
-tc5.db <- dbConnect(RSQLite::SQLite(), paste0(path_to_tc5_repo,"/data/TC5_data.db"))
-
-## Genes underlying behavioral plasticity
-  ## DEGS (foragers v. nurses)
-  # genes higher expressed in forager brains (v. nurse brains)
-  for.up <- tbl(tc5.db, "TC5_DEGs_all") %>% filter(upregulation=="for") %>% collect() %>% pull(gene_name)
-  # genes lower expressed in for. brains (v. nurse brains)
-  for.down <- tbl(tc5.db, "TC5_DEGs_all") %>% filter(upregulation=="nur") %>% collect() %>% pull(gene_name)
-
-## Genes underlying parasite-induced behavioral manipulation
-  ## DEGs (ophio-ant v. control-ant)
-  ophio.dat <- tbl(tc5.db, "ophio_biting_control") %>% collect() %>% select(gene, value_1, value_2, q_value:logFC)
-  ophio.dat <- ophio.dat %>%
-    filter(abs(logFC) >= 1 & significant=="yes" & q_value < 0.05) %>%
-    mutate(ophio = ifelse(logFC > 0, "down", "up"))
-  # genes higher expressed in ant heads during Ophio-manipulated biting (v. controls)
-  ophio.up <- ophio.dat %>% filter(ophio=="up") %>% pull(gene)
-  # genes lower expressed in ant heads during manipulated biting (v. controls)
-  ophio.down <- ophio.dat %>% filter(ophio=="down") %>% pull(gene)
-
-## LIST THREE - genes underlying behavioral plasticity and parasitic behavioral manipulation
-list3 <- list(for.up, for.down, # same as list three
-              ophio.up, ophio.down)
-names(list3) <- c("for-UP", "for-DOWN",
-                  "ophio-UP", "ophio-DOWN")
-
-writeLines("List of interesting genes #3
-----------------------------
-Genes underlying behavioral plasticity and parasite-induced behavioral manipulation")
-sapply(list3, length)
-
-## CHECK FOR OVERLAP
-
-## make a GOM object
-gom.1v3 <- newGOM(list1, list3,
-       genome.size = nGenes)
-## visualize the overlaps
-png(paste0(path_to_repo, "/results/figures/", sample.name,"_gom_1v3.png"), 
-    width = 20, height = 30, units = "cm", res = 300)
-drawHeatmap(gom.1v3,
-              adj.p=T,
-              cutoff=0.05,
-              what="odds.ratio",
-              # what="Jaccard",
-              log.scale = T,
-              note.col = "grey80")
-trash <- dev.off()
-
-writeLines("Visualizing the significant overlaps between the identified modules and your list of interesting genes
-----------------------------
-- for-UP: sig. higher expressed in forager brains as compared to nurses
-- for-DOWN: sig. lower expressed in forager brains as compared to nurses
-----------------------------
-- ophio-UP: sig. higher expressed in Ophio-infected forager heads during manipulated biting as compared to healthy foragers
-- ophio-DOWN: sig. lower expressed in Ophio-infected forager heads during manipulated biting as compared to healthy foragers")
-```
-
-```{r plot_gom_1v3, echo = FALSE, out.width='65%', fig.show='hold', fig.align='center', fig.cap='Gene-clusters underlying behavioral plasiticity and parasitic behavioral manipulation', eval=F}
-# knitr::include_graphics(c(paste0(path_to_repo, "/results/figures/", sample.name,"_gom_1v2.png"),
-#                           paste0(path_to_repo, "/results/figures/", sample.name,"_gom_1v3.png")))
-knitr::include_graphics(paste0(path_to_repo, "/results/figures/", sample.name,"_gom_1v3.png"))
-```
-
-The figure above indicates that the gene-clusters that underlie behavioral plasticity (caste differentiation) and the ones that are affected during *Ophiocordycpes*-induced behavioral manipulation are the same. 
-
-**This reinforces what I have found already using the daily brain transcriptomes of Cflo (data from Das and de Bekker, 2021; bioRxiv.**
-
-
-## Step 4: Explore your clusters
-
-### 4.1 Cluster: IVORY
-
-#### 4.1.1 What are these overlapping genes?
-
-- Let's focus on the cluster ivory that contains most Cflo genes that:
-  - are sig. higher expressed in foragers (v. nurses) and 
-  - are sig. up-regulated in forager heads during behavioral manipulation (v. uninfected foragers)
-
-```{r explore_ivory_part1, eval=FALSE}
-
-# specify our cluster of interest (coi)
-coi.1 <- "ivory"
-
-writeLines("How many genes are there in our cluster of interest?")
-module_genes[[coi.1]] %>% length() # n = 1466 genes
-
-# specify our genes of interest (goi)
-goi.1 <- ophio.up
-writeLines("How many genes are up-regulated in Cflo heads during ophio-manipulation?")
-goi.1 %>% length() # n = 232 genes
-
-# Identify overlapping genes
-overlapping.genes.1 <- intersect(module_genes[[coi.1]], goi.1) # n = 90 genes
-
-# what are these genes?
-overlapping.genes.1.annot <- 
-  tc5.db %>% 
-  tbl(., "annot_fpkm") %>% 
-  filter(gene_name %in% overlapping.genes.1) %>% 
-  select(gene_name, 
-         blast_annot=old_annotation, 
-         GOs, pfams, signalP, TMHMM) %>% 
-  collect()
-
-writeLines("Which genes in our cluster are up-regulated in Cflo heads during Ophio-manipulation")
-DT::datatable(overlapping.genes.1.annot, options = list(
-  pageLength = 5,
-  lengthMenu = c(5, 10, 15, 20)
-))
-  
-```
-
-Which genes in darkturquoise show overlap with both genes of interests?
-
-```{r explore_ivory_part2, eval=F}
-
-# define the second gene-set of interst
-goi.2 <- for.up
-
-writeLines("How many genes are up-regulated in forager brains as compared to nurses?")
-goi.2 %>% length() # n = 34 genes
-
-# Identify overlapping.genes
-overlapping.genes.2 <- intersect(overlapping.genes.1, goi.2) # n = 12 genes
-# what are these genes?
-overlapping.genes.2.annot <- 
-  tc5.db %>% 
-  tbl(., "annot_fpkm") %>% 
-  filter(gene_name %in% overlapping.genes.2) %>% 
-  select(gene_name, 
-         blast_annot=old_annotation, 
-         GOs, pfams, signalP, TMHMM) %>% 
-  collect()
-
-writeLines("Explore the genes in our cluster of interest that are:
-- up-regulated in Cflo foragers during Ophio-manipulation as compared to healthy foragers, and
-- up-regaulated in Cflo foragers as compared to nurses")
-# Visualize the results
-DT::datatable(overlapping.genes.2.annot, options = list(
-  pageLength = 5,
-  lengthMenu = c(5, 10, 15, 20)
-))
-
-```
-
-
-#### 4.1.2 What's special about my cluster?
-
-Now that we know that the module **ivory** contains most of our genes of interest, we can infer its function (enriched GOs and PFAMs) and also identify the genes that are important for the cluster to be functional (i.e., hub genes).
-
-
-#### 4.1.3 Enriched GO terms
-
-First up, let's see which processes are overrepresented in the cluster.
-
-```{r explore_ivory_v3, eval=F}
-
-# To run a functional enrichment analyis, we first need to define the set of background genes; for our purpose, we will use the 9139 genes that we used to build our circadian GCN
-bg.genes <- dat %>% pull(gene_name)
-
-# Run the enrichment function (note, GO HERE TO READ MORE ABOUT THIS FUNCTION)
-go_enrichment(geneset = module_genes[[coi.1]],
-              function.dir = path_to_repo,
-                org = "cflo", 
-                bg = bg.genes) %>% 
-  
-  # visualize the results
-  go_enrichment_plot(function.dir = path_to_repo)
-
-```
-
-#### 4.1.4 Daily rhythms?
-
-Second, let's plot the daily expression patterns of all genes in the cluster; do we see anything interesting?
-
-Need to:
-
-- [note for self] update the stacked.zplot() function to show data for TC7 (not TC5)
-
-```{r explore_ivory_v4, eval=F}
-
-# # Obtain the stacked z-plots for nurses (blue) and foragers (red)
-# zplots.ivory <- 
-#   module_genes[[coi.1]] %>% 
-#   stacked.zplot()
-# 
-# # Plot them side by side
-# zplots.ivory[[1]] / zplots.ivory[[2]]
-
-```
-
-
-
-#### 4.1.5 HUB genes?
- 
-Need to:
-
-- identify the hub genes in the cluster
-- other genes of interest based on their location in the network?
-
-
-### 4.2 Cluster: ANTIQUEWHITE4
-
-#### 4.2.1 Overlapping genes
-
-```{r explore_antiquewhite4_v1, echo=F, eval=F}
-# # specify our cluster of interest (coi)
-# coi.2 <- "antiquewhite4"
-# 
-# # specify our genes of interest (goi)
-# goi.3 <- ophio.down
-# 
-# # Identify overlapping genes
-# overlapping.genes.3 <- intersect(module_genes[[coi.2]], goi.3)
-# 
-# # define the second gene-set of interst
-# goi.4 <- for.down
-# 
-# # Identify overlapping.genes
-# overlapping.genes.4 <- intersect(overlapping.genes.3, goi.4) 
-# 
-# # what are these genes?
-# overlapping.genes.4.annot <- 
-#   tc5.db %>% 
-#   tbl(., "annot_fpkm") %>% 
-#   filter(gene_name %in% overlapping.genes.4) %>% 
-#   select(gene_name, 
-#          blast_annot=old_annotation, 
-#          GOs, pfams, signalP, TMHMM) %>% 
-#   collect()
-# 
-# # Visualize the results
-# DT::datatable(overlapping.genes.4.annot, options = list(
-#   pageLength = 5,
-#   lengthMenu = c(5, 10, 15, 20)
-# ))
-
-```
-
-#### 4.2.2 Enriched GO terms
-
-```{r explore_darkred_v2, echo=F, eval=F}
-# 
-# # which genes?
-# module_genes[[coi.2]] %>% 
-#   
-#   # run enrichment
-#   go_enrichment(.,
-#               function.dir = path_to_repo,
-#                 org = "cflo", 
-#                 bg = bg.genes) %>% 
-#   
-#   # visualize the results
-#   go_enrichment_plot(function.dir = path_to_repo)
-
-```
-
-#### 4.2.3 Daily rhythms?
-
-```{r explore_darkred_v3, echo=F, eval=F}
-
-# # Obtain the stacked z-plots for 
-# # nurses (blue) and foragers (red)
-# zplots.darkred <- 
-#   module_genes[[coi.2]] %>% 
-#   stacked.zplot()
-# 
-# # Plot them side by side
-# zplots.darkred[[1]] / zplots.darkred[[2]]
-
-```
-
-
-#### 4.3.4 HUB genes?
-
-#more coming soon...
 

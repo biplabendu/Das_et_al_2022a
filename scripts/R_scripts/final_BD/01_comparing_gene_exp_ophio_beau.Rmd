@@ -648,8 +648,8 @@ ggpubr::ggarrange(plotlist=g,
 #                     path = paste0(path_to_repo,"/results/00_supplementary_files/02_gsoi_rhy24_beau.xlsx"
 #                                   ))
 
-# update counter
-counter <- counter+1
+# # update counter
+# counter <- counter+1
 
 
 ```
@@ -1131,13 +1131,13 @@ for(i in 1:2){
 }
 ## loop ends  
   
-## Save results of not_expressed genes into an excel file
-supp <- list(
-  "rhy24_beau_no_ortholog" = gsoi.4[[1]],
-  "rhy24_ophio_no_ortholog" = gsoi.4[[2]])
-writexl::write_xlsx(supp,
-                    path = paste0(path_to_repo,
-                                  "/results/00_supplementary_files/04_gsoi_rhy24_beau_ophio_not_ortholog.xlsx"))
+# ## Save results of not_expressed genes into an excel file
+# supp <- list(
+#   "rhy24_beau_no_ortholog" = gsoi.4[[1]],
+#   "rhy24_ophio_no_ortholog" = gsoi.4[[2]])
+# writexl::write_xlsx(supp,
+#                     path = paste0(path_to_repo,
+#                                   "/results/00_supplementary_files/04_gsoi_rhy24_beau_ophio_not_ortholog.xlsx"))
 
 
 ```
@@ -1151,7 +1151,7 @@ To do so, I performed hierarchical clustering of all orthologous genes that show
 
 
 ```{r ortho_rhy24}
-rhy.homology.dat <- 
+rhy.homology.dat <-
   homology.dat %>% 
   filter(beau_gene %in% rhy[[1]] | ophio_gene %in% rhy[[2]])
 
@@ -1262,29 +1262,28 @@ for (j in 1:2) {
     bg.genes <- homology.dat %>% pull(ophio_gene) %>% unique()
     
     ## Transform gene names (ophio -> beau) and refine background geneset
-    if (j == 1) {
-      genes <- 
+    
+    if(j==1) {
+    genes <- 
         homology.dat %>% 
         filter(ophio_gene %in% genes) %>% 
         pull(beau_gene)
       bg.genes <- homology.dat %>% pull(beau_gene) %>% unique()
-    }
-    
-    if(j==1) {
+      
     # Enrichment - beau
     gsoi.5.beau[[i]] <-
-      genes %>% 
+      genes %>%
         check_enrichment(.,
                       what = "pfams",
                       org = sample.name[[j]],
                       bg = expressed[[j]],
                       filter = T,
                       expand = T,
-                      plot = T) %>% 
-    
+                      plot = T) %>%
+
     # print(overrepresented.terms)
     # writeLines(paste0("\n", "n(overrepresented terms) = ", nrow(overrepresented.terms), "\n"))
-      
+
     # nothing much to talk about things that have no annotations ---
     filter(annot_desc!="no_desc") %>%
     # save the results to a file
@@ -1295,6 +1294,7 @@ for (j in 1:2) {
     gsoi.5.ophio[[i]] <-
       genes %>% 
         check_enrichment(.,
+                      # what = "GOs",
                       what = "pfams",
                       org = sample.name[[j]],
                       bg = expressed[[j]],
@@ -1310,41 +1310,41 @@ for (j in 1:2) {
     # save the results to a file
     arrange(annot_desc)
     
-    # MAKE THE SUPP FILE
-    gsoi.5[[i]] <-
-      annots[[2]] %>%
-      select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>%
-      filter(gene_name %in% genes) %>%  # change here
-      left_join(gsoi.5.ophio[[i]][,c(1,3)], by="gene_name") %>%  # change here
-      select(ophio_gene=gene_name, 
-             gene_desc, enriched_annot=annot_desc, everything()) %>%
-      # mutate(enriched_annot=as.factor(enriched_annot)) %>%
-      arrange(enriched_annot) %>% 
-        
-        ## add cluster information
-        mutate(clusterID = paste0("cluster_",i)) %>% 
-        
-        ## add homology data from beau
-        left_join(homology.dat, by=c("ophio_gene")) %>% 
-        
-        ## add rhythmicity data - ophio_cflo
-        left_join(rhy.24.sig[[2]] %>% 
-                    select(ophio_gene=ID, ophio_pval=GammaP) %>% 
-                    mutate(ophio_rhy24 = ifelse(ophio_pval < FDR/100, "yes", "no")),
-                  by=c("ophio_gene")) %>% 
-        
-        ## add rhythmicity data - beau
-        left_join(rhy.24.sig[[1]] %>% 
-                    select(beau_gene=ID, beau_pval=GammaP) %>% 
-                    mutate(beau_rhy24 = ifelse(beau_pval < FDR/100, "yes", "no")),
-                  by=c("beau_gene")) %>% 
-        
-        ## arrange the columns
-        select(ophio_gene, gene_desc, clusterID, enriched_annot, 
-               ophio_rhy24, beau_rhy24, GOs:TMHMM, everything()) %>% 
-        
-        ## arrange by enriched_annot
-        arrange(enriched_annot)
+    # # MAKE THE SUPP FILE
+    # gsoi.5[[i]] <-
+    #   annots[[2]] %>%
+    #   select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>%
+    #   filter(gene_name %in% genes) %>%  # change here
+    #   left_join(gsoi.5.ophio[[i]][,c(1,3)], by="gene_name") %>%  # change here
+    #   select(ophio_gene=gene_name, 
+    #          gene_desc, enriched_annot=annot_desc, everything()) %>%
+    #   # mutate(enriched_annot=as.factor(enriched_annot)) %>%
+    #   arrange(enriched_annot) %>% 
+    #     
+    #     ## add cluster information
+    #     mutate(clusterID = paste0("cluster_",i)) %>% 
+    #     
+    #     ## add homology data from beau
+    #     left_join(homology.dat, by=c("ophio_gene")) %>% 
+    #     
+    #     ## add rhythmicity data - ophio_cflo
+    #     left_join(rhy.24.sig[[2]] %>% 
+    #                 select(ophio_gene=ID, ophio_pval=GammaP) %>% 
+    #                 mutate(ophio_rhy24 = ifelse(ophio_pval < FDR/100, "yes", "no")),
+    #               by=c("ophio_gene")) %>% 
+    #     
+    #     ## add rhythmicity data - beau
+    #     left_join(rhy.24.sig[[1]] %>% 
+    #                 select(beau_gene=ID, beau_pval=GammaP) %>% 
+    #                 mutate(beau_rhy24 = ifelse(beau_pval < FDR/100, "yes", "no")),
+    #               by=c("beau_gene")) %>% 
+    #     
+    #     ## arrange the columns
+    #     select(ophio_gene, gene_desc, clusterID, enriched_annot, 
+    #            ophio_rhy24, beau_rhy24, GOs:TMHMM, everything()) %>% 
+    #     
+    #     ## arrange by enriched_annot
+    #     arrange(enriched_annot)
         
         
     
@@ -1373,17 +1373,17 @@ for (j in 1:2) {
 ### loop ends ###
 #################
 
-## Save results of not_expressed genes into an excel file
-  supp <- list(
-    "ortholog_cluster1" = gsoi.5[[1]],
-    "ortholog_cluster2" = gsoi.5[[2]],
-    "ortholog_cluster3" = gsoi.5[[3]],
-    "ortholog_cluster4" = gsoi.5[[4]])
-  writexl::write_xlsx(supp,
-                      path = paste0(path_to_repo,
-                                    "/results/00_supplementary_files/05_gsoi_rhy24_beau_ophio_ortholog.xlsx"))
-  # update counter
-  counter <- counter+1
+# ## Save results of not_expressed genes into an excel file
+#   supp <- list(
+#     "ortholog_cluster1" = gsoi.5[[1]],
+#     "ortholog_cluster2" = gsoi.5[[2]],
+#     "ortholog_cluster3" = gsoi.5[[3]],
+#     "ortholog_cluster4" = gsoi.5[[4]])
+#   writexl::write_xlsx(supp,
+#                       path = paste0(path_to_repo,
+#                                     "/results/00_supplementary_files/05_gsoi_rhy24_beau_ophio_ortholog.xlsx"))
+#   # update counter
+#   counter <- counter+1
 
 ```
 
