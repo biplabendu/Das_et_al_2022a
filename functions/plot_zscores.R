@@ -1023,8 +1023,10 @@ stacked.zplot_tc6 <- function(gene_names,
                               cond = "ophio_cflo", 
                               verbose = F,
                               plot.mean = T,
+                              gamma.pval = 0.05,
                               clean = F,
                               lwd=1.5, 
+                              bg.lwd=0.5,
                               alpha=0.75, 
                               bg.alpha = 0.1, ...) {
     
@@ -1202,7 +1204,7 @@ stacked.zplot_tc6 <- function(gene_names,
           # Plot the individual gene expressions (zscores)
           geom_line(data=dummy[dummy$cond==i,], 
                     aes(x=as.numeric(as.character(ZT)), y=zscore, group = gene_name),
-                    size=0.5, alpha=bg.alpha, 
+                    size=bg.lwd, alpha=bg.alpha, 
                     col = "grey60"
                     # col = ifelse(i==sample.name[1], c(col.scheme[[1]]),
                     #              ifelse(i==sample.name[2], c(col.scheme[[2]]),
@@ -1265,7 +1267,7 @@ stacked.zplot_tc6 <- function(gene_names,
           # Plot the individual gene expressions (zscores)
           geom_line(data=dummy[dummy$cond==i,], 
                     aes(x=as.numeric(as.character(ZT)), y=zscore, group = gene_name),
-                    size=0.5, alpha=bg.alpha, 
+                    size=bg.lwd, alpha=bg.alpha, 
                     col = col.scheme[i]
                     # col = ifelse(i==sample.name[1], c(col.scheme[[1]]),
                     #              ifelse(i==sample.name[2], c(col.scheme[[2]]),

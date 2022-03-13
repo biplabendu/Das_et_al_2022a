@@ -1147,3 +1147,73 @@ fishers_overlap <- function(set.1, set.2, bg.genes=13808) {
   # fisher test
   fisher.test(test.table) %>% print()
 }
+
+
+# 5. TC6_annotator --------------------------------------------------------
+TC6_annotator <- function(genes, FDR=5, GammaP=0.05) {
+  
+  ## load libraries
+  pacman::p_load(dplyr, tidyr)
+  library(timecourseRnaseq)
+  
+  ## set conflict preference
+  conflict_prefer("select", "dplyr", quiet = T)
+  conflict_prefer("filter", "dplyr", quiet = T)
+  conflict_prefer("union", "dplyr", quiet = T)
+  
+  ## set path to your working directory
+  path_to_repo = "/Users/biplabendudas/Documents/GitHub/Das_et_al_2022a"
+  
+  ## annotation files
+  annots <- list(beau_annots,ophio_cflo_annots)
+  
+  ## get the user-specified gene names
+  g <- as.character(genes)
+  
+  ## load the results of the DEG analysis
+  load(file = paste0(path_to_repo, "/results/deg_analysis/ocflo_inf_v_controls.RData"))
+  
+  ## load the eJTK results for the sig. 24h rhythmic genes in beau, Ocflo (control and infection)
+  load(file = paste0(path_to_repo, "/results/ejtk_output/rhy24_sig_all.Rdata"))
+  
+  ## make the annotated file for the gene list 
+  ## [currently available for ophio only]
+  dummy <- 
+    annots[[2]] %>% 
+    filter(gene_name %in% g) %>% 
+    
+    ## add DEG analyses data
+    left_join(all.DEGs %>%
+                select(gene_name,
+                       abs_log2FC = logFC,
+                       inf_v_control, BH_pval = adj.P.Val),
+              by=c("gene_name")) %>%
+    mutate(abs_log2FC = abs(abs_log2FC)) %>%
+    select(ophio_gene=gene_name, everything()) %>% 
+    
+    ## add rhythmicity data - ophio_cflo - controls
+    left_join((rhy.24.sig[[2]] %>%
+                 dplyr::select(ophio_gene=ID, control_pval=GammaP) %>%
+                 mutate(control_rhy24 = ifelse(control_pval < FDR/100, "yes", "no"))),
+              by=c("ophio_gene")) %>% 
+    
+    ## add rhythmicity data - ophio_cflo - infected
+    left_join(rhy.24.sig[[3]] %>%
+                select(ophio_gene=ID, inf_pval=GammaP) %>%
+                mutate(inf_rhy24 = ifelse(inf_pval < FDR/100, "yes", "no")),
+              by=c("ophio_gene")) %>% 
+    
+    ## arrange the columns
+    select(ophio_gene, gene_desc, inf_v_control, abs_log2FC,
+           # enriched_annot,
+           control_rhy24, inf_rhy24, signalP:TMHMM, everything()) %>%
+    
+    ## arrange by enriched_annot
+    arrange(inf_v_control, desc(abs_log2FC)) %>% 
+    
+    as_tibble()
+  
+  ## return the annotated file
+  return(dummy)
+  
+}

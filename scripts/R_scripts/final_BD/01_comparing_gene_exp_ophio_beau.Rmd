@@ -243,6 +243,7 @@ for (i in 1:length(sample.name)) {
 
 ### Gene set of interest 1 ###
 gsoi.1 <- list()
+# names(gsoi.1) <- "not_expressed_genes"
 
 ## loop STARTS
 for (i in 1:length(sample.name)) {
@@ -514,6 +515,12 @@ for (i in 1:3) {
 
 }
 
+# ## Save the rhy.24.sig file for making a gene annotator function (TC6_annotator)
+# save(rhy.24.sig, file = paste0(path_to_repo, "/results/ejtk_output/rhy24_sig_all.Rdata"))
+
+
+#### Phase Plot ####
+
 # save all the circular phases in a list
 l.phases <- phase.ejtk
 # let's name the list elements for later use and reference
@@ -663,6 +670,9 @@ ggpubr::ggarrange(plotlist=g,
 
 ### Gene set of interest 3 ###
 gsoi.3 <- list()
+# names(gsoi.3) <- "rhy24_genes_in_ocflo"
+
+## initialise list to hold phase data for rhythmic genes
 l.phases <- list()
 
 for (i in 1:n_clusters){
@@ -729,16 +739,9 @@ for (i in 1:n_clusters){
       
       
   # phase plots
-      
-    ## Phase plot ends
-    rhy.24.sig <- 
-        tbl(ejtk.db, paste0(sample.name[2],"_zscores_24h")) %>% 
-        filter(GammaP < gamma.pval) %>% 
-        filter(ID %in% genes) %>% 
-      collect()
     
     # Get the phases of the best matched waveforms
-    phase.ejtk <- circular::circular(rhy.24.sig$Phase, units="hours", template="clock24")
+    phase.ejtk <- circular::circular(rhy.24.sig[[2]]$Phase, units="hours", template="clock24")
   
     # save all the circular phases in a list
     l.phases[[i]] <- phase.ejtk
@@ -818,7 +821,7 @@ for (i in 1:n_clusters){
 
 ___
 
-### Overlap between ocflo and okim
+## 2. Ocflo v. Okim
 
 ```{r overlap_ophios}
 
@@ -900,7 +903,7 @@ What about the rhythmic genes in Ocflo that do not have a homolog in Okim?
 
 > 115 such genes, but no enriched pfams.
 
-### Which clusters?
+### Time-of-day preference?
 
 Are these overlapping genes day- or night-active in Ocflo?
 
@@ -1087,6 +1090,7 @@ First, let's explore the genes that are 24h-rhythmic in a fungal species but lac
 
 ### Gene set of interest 4 ###
 gsoi.4 <- list()
+# names(gsoi.4) <- "rhy24_genes_ocflo_beau_no_homologs"
 
 rhy.not.homolog <- list()
 
@@ -1243,6 +1247,7 @@ pheatmap(zscore.rhy.homology.dat, show_rownames = F, show_colnames = F,
 
 ### Gene set of interest 5 ###
 gsoi.5 <- list()
+# names(gsoi.5) <- "rhy24_genes_ocflo_or_beau_homologs"
 gsoi.5.beau <- list()
 gsoi.5.ophio <- list()
 
@@ -1310,43 +1315,41 @@ for (j in 1:2) {
     # save the results to a file
     arrange(annot_desc)
     
-    # # MAKE THE SUPP FILE
-    # gsoi.5[[i]] <-
-    #   annots[[2]] %>%
-    #   select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>%
-    #   filter(gene_name %in% genes) %>%  # change here
-    #   left_join(gsoi.5.ophio[[i]][,c(1,3)], by="gene_name") %>%  # change here
-    #   select(ophio_gene=gene_name, 
-    #          gene_desc, enriched_annot=annot_desc, everything()) %>%
-    #   # mutate(enriched_annot=as.factor(enriched_annot)) %>%
-    #   arrange(enriched_annot) %>% 
-    #     
-    #     ## add cluster information
-    #     mutate(clusterID = paste0("cluster_",i)) %>% 
-    #     
-    #     ## add homology data from beau
-    #     left_join(homology.dat, by=c("ophio_gene")) %>% 
-    #     
-    #     ## add rhythmicity data - ophio_cflo
-    #     left_join(rhy.24.sig[[2]] %>% 
-    #                 select(ophio_gene=ID, ophio_pval=GammaP) %>% 
-    #                 mutate(ophio_rhy24 = ifelse(ophio_pval < FDR/100, "yes", "no")),
-    #               by=c("ophio_gene")) %>% 
-    #     
-    #     ## add rhythmicity data - beau
-    #     left_join(rhy.24.sig[[1]] %>% 
-    #                 select(beau_gene=ID, beau_pval=GammaP) %>% 
-    #                 mutate(beau_rhy24 = ifelse(beau_pval < FDR/100, "yes", "no")),
-    #               by=c("beau_gene")) %>% 
-    #     
-    #     ## arrange the columns
-    #     select(ophio_gene, gene_desc, clusterID, enriched_annot, 
-    #            ophio_rhy24, beau_rhy24, GOs:TMHMM, everything()) %>% 
-    #     
-    #     ## arrange by enriched_annot
-    #     arrange(enriched_annot)
-        
-        
+    # MAKE THE SUPP FILE
+    gsoi.5[[i]] <-
+      annots[[2]] %>%
+      select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>%
+      filter(gene_name %in% genes) %>%  # change here
+      left_join(gsoi.5.ophio[[i]][,c(1,3)], by="gene_name") %>%  # change here
+      select(ophio_gene=gene_name,
+             gene_desc, enriched_annot=annot_desc, everything()) %>%
+      # mutate(enriched_annot=as.factor(enriched_annot)) %>%
+      arrange(enriched_annot) %>% 
+
+        ## add cluster information
+        mutate(clusterID = paste0("cluster_",i)) %>% 
+
+        ## add homology data from beau
+        left_join(homology.dat, by=c("ophio_gene")) %>%
+
+        ## add rhythmicity data - ophio_cflo
+        left_join(rhy.24.sig[[2]] %>%
+                    select(ophio_gene=ID, ophio_pval=GammaP) %>%
+                    mutate(ophio_rhy24 = ifelse(ophio_pval < FDR/100, "yes", "no")),
+                  by=c("ophio_gene")) %>%
+
+        ## add rhythmicity data - beau
+        left_join(rhy.24.sig[[1]] %>%
+                    select(beau_gene=ID, beau_pval=GammaP) %>%
+                    mutate(beau_rhy24 = ifelse(beau_pval < FDR/100, "yes", "no")),
+                  by=c("beau_gene")) %>%
+
+        ## arrange the columns
+        select(ophio_gene, gene_desc, clusterID, enriched_annot,
+               ophio_rhy24, beau_rhy24, GOs:TMHMM, everything()) %>%
+
+        ## arrange by enriched_annot
+        arrange(enriched_annot)
     
     }
     
@@ -1574,7 +1577,6 @@ conflict_prefer("union", "dplyr")
 Create dataframe with metadata information for the different samples collected
 
 ```{r create_metadata}
-
 sampleName <- c("ophio_cflo","ophio_ophio-infected")
 short.name <- c("AC","AI") # AC = arb2-control, AI = arb2-infection
 time.points <- c(2,4,6,8,10,12,14,16,18,20,22,24)
@@ -1622,8 +1624,8 @@ sm[1:5, ]
 ## DATASET 1
 ## Load the control O.cflo data (from TC6)
 ocflo.control.dat <-
-  data.db %>% 
-  tbl(., paste0(sampleName[[1]], "_fpkm")) %>% 
+  data.db %>%
+  tbl(., paste0(sampleName[[1]], "_fpkm")) %>%
   select(gene_name, everything()) %>%
   collect()
 
@@ -1656,9 +1658,9 @@ colnames(ocflo.inf.dat)[-1] <- paste0("ZT", meta[meta$cond==sampleName[[2]],] %>
 
 ## Use the genes that are expressed in both conditions
 emat <-
-  ocflo.control.dat %>% 
-  filter(gene_name %in% ocflo.inf.dat$gene_name) %>% 
-  left_join(ocflo.inf.dat, by="gene_name") %>% 
+  ocflo.control.dat %>%
+  filter(gene_name %in% ocflo.inf.dat$gene_name) %>%
+  left_join(ocflo.inf.dat, by="gene_name") %>%
   as.data.frame()
 
 ```
@@ -1708,11 +1710,18 @@ setorderv(deLimma.deg, 'adj.P.Val')
 ### Annotate the results
 # Annotate the results to indicate the significant genes
 all.DEGs <-
-  deLimma.deg %>% 
-  arrange(desc(abs(logFC)), adj.P.Val) %>% 
-  mutate(sig = as.factor(ifelse(adj.P.Val < q.threshold & abs(logFC) >= log2.foldchange, "yes", "no"))) %>% 
-  mutate(inf_v_control = as.factor(ifelse(sig=="yes", ifelse( logFC > 0, "up", "down" ), "NA"))) %>% 
+  deLimma.deg %>%
+  arrange(desc(abs(logFC)), adj.P.Val) %>%
+  mutate(sig = as.factor(ifelse(adj.P.Val < q.threshold & abs(logFC) >= log2.foldchange, "yes", "no"))) %>%
+  mutate(inf_v_control = as.factor(ifelse(sig=="yes", ifelse( logFC > 0, "up", "down" ), "NA"))) %>%
   mutate(inf = sampleName[[2]])
+
+
+# ## Save the DEG results to a Rdata file
+# save(all.DEGs, file = paste0(path_to_repo, "/results/deg_analysis/ocflo_inf_v_controls.RData"))
+# ## load the results of the DEG analysis
+# load(file = paste0(path_to_repo, "/results/deg_analysis/ocflo_inf_v_controls.RData"))
+
 
 ### Summarize the results
 writeLines(paste0("\nControl-", sampleName[[1]], " v. ", sampleName[[2]], "\n--Results of DEG analysis--"))
@@ -1730,6 +1739,7 @@ all.DEGs %>%
     ## n = 81 up- and 141 down-regulated genes in Cflo heads during Ophio-infection 
     ## (at 5% FDR; log2-fold-change ≥ 1) 
   print()
+
 
 ### Subset to keep only sig. DEGs
 sig.DEGs <- all.DEGs %>% filter(sig=="yes")
@@ -1790,15 +1800,15 @@ will2020_data %<>%
 
 ## 5. Overlap between DEGs during infection v. manipulation
 
-```{r DEG_inf_manip}
+```{r DEG_inf_manip_overlap}
 
 ### Subset the up/down-regulated genes
 ### At halfway-through disease progression
-inf.up <- sig.DEGs %>% filter(inf_v_control=="up") %>% pull(gene_name)
-inf.down <- sig.DEGs %>% filter(inf_v_control=="down") %>% pull(gene_name)
+inf.up <- sig.DEGs %>% filter(inf_v_control=="up") %>% pull(gene_name) %>% na.omit()
+inf.down <- sig.DEGs %>% filter(inf_v_control=="down") %>% pull(gene_name) %>% na.omit()
 ### At active manipulation
-manip.up <- will2020_data %>% filter(up_down=="up") %>% pull(gene_name)
-manip.down <- will2020_data %>% filter(up_down=="down") %>% pull(gene_name)
+manip.up <- will2020_data %>% filter(up_down=="up") %>% pull(gene_name) %>% na.omit()
+manip.down <- will2020_data %>% filter(up_down=="down") %>% pull(gene_name) %>% na.omit()
 
 
 ### Visualize the results
@@ -2000,70 +2010,227 @@ gsoi.6 <- list()
 ## loop begins
 for (i in 1:length(which.degs)) {
   
-  gsoi.6[[i]] <- 
+  gsoi.6[[i]] <-
     which.degs[[i]] %>% 
     check_enrichment(.,
                      org = "ophio_cflo",
                      bg = bg.genes,
+                     # what = "GOs",
                      what = "pfams",
                      expand = T) %>% 
-    # nothing much to talk about things that have no annotations ---
+    # # nothing much to talk about things that have no annotations ---
     filter(annot_desc!="no_desc") %>%
-    # save the results to a file
-    arrange(annot_desc)
+    # # save the results to a file
+    arrange(annot_desc) #%>% head(20) %>% print()
     
   # MAKE THE SUPP FILE
   gsoi.6[[i]] <-
-    annots[[2]] %>% 
-    select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>% 
+    annots[[2]] %>%
+    select(gene_name, gene_desc, GOs, pfams, signalP, SSP, TMHMM) %>%
     filter(gene_name %in% which.degs[[i]]) %>%  # change here
     left_join(gsoi.6[[i]][,c(1,3)], by="gene_name") %>%  # change here
     select(gene_name, gene_desc, enriched_annot=annot_desc, everything()) %>%
-    # mutate(enriched_annot=as.factor(enriched_annot)) %>% 
-    arrange(enriched_annot) %>% 
-    
+    # mutate(enriched_annot=as.factor(enriched_annot)) %>%
+    arrange(enriched_annot) %>%
+
     ## add DEG analyses data
-      left_join(all.DEGs %>% 
-                  select(gene_name, 
+      left_join(all.DEGs %>%
+                  select(gene_name,
                          abs_log2FC = logFC,
                          inf_v_control, BH_pval = adj.P.Val),
-                by=c("gene_name")) %>% 
-      mutate(abs_log2FC = abs(abs_log2FC)) %>% 
-      select(ophio_gene=gene_name, everything()) %>% 
-      
+                by=c("gene_name")) %>%
+      mutate(abs_log2FC = abs(abs_log2FC)) %>%
+      select(ophio_gene=gene_name, everything()) %>%
+
       ## add rhythmicity data - ophio_cflo - controls
-        left_join(rhy.24.sig[[2]] %>% 
-                    select(ophio_gene=ID, control_pval=GammaP) %>% 
-                    mutate(control_rhy24 = ifelse(control_pval < FDR/100, "yes", "no")),
-                  by=c("ophio_gene")) %>% 
-        
+        left_join((rhy.24.sig[[2]] %>%
+                    dplyr::select(ophio_gene=ID, control_pval=GammaP) %>%
+                    mutate(control_rhy24 = ifelse(control_pval < FDR/100, "yes", "no"))),
+                  by=c("ophio_gene")) %>%
+
       ## add rhythmicity data - ophio_cflo - infected
-        left_join(rhy.24.sig[[3]] %>% 
-                    select(ophio_gene=ID, inf_pval=GammaP) %>% 
+        left_join(rhy.24.sig[[3]] %>%
+                    select(ophio_gene=ID, inf_pval=GammaP) %>%
                     mutate(inf_rhy24 = ifelse(inf_pval < FDR/100, "yes", "no")),
-                  by=c("ophio_gene")) %>% 
-      
+                  by=c("ophio_gene")) %>%
+
       ## arrange the columns
         select(ophio_gene, gene_desc, inf_v_control, abs_log2FC,
-               enriched_annot, 
-               control_rhy24, inf_rhy24, GOs:TMHMM, everything()) %>% 
-      
+               enriched_annot,
+               control_rhy24, inf_rhy24, GOs:TMHMM, everything()) %>%
+
       ## arrange by enriched_annot
-       arrange(inf_v_control, desc(abs_log2FC), enriched_annot) 
+       arrange(inf_v_control, desc(abs_log2FC), enriched_annot)
     
   }
 ## loop ends
 
-## Save results of not_expressed genes into an excel file
-supp <- list(
-  "UP_DEG_ophio_control_v_inf" = gsoi.6[[1]],
-  "DOWN_DEG_ophio_control_v_inf" = gsoi.6[[2]])
-writexl::write_xlsx(supp,
-                    path = paste0(path_to_repo,
-                                  "/results/00_supplementary_files/06_gsoi_DEG_ophio_control_v_inf.xlsx"))
-# update counter
-counter <- counter+1
+# ## Save results of not_expressed genes into an excel file
+# supp <- list(
+#   "UP_DEG_ophio_control_v_inf" = gsoi.6[[1]],
+#   "DOWN_DEG_ophio_control_v_inf" = gsoi.6[[2]])
+# writexl::write_xlsx(supp,
+#                     path = paste0(path_to_repo,
+#                                   "/results/00_supplementary_files/06_gsoi_DEG_ophio_control_v_inf.xlsx"))
+# # update counter
+# counter <- counter+1
 
 ```
 
+
+> Of the different pfam domains enriched in these DEGs, several (MFS_1, Sugar_tr, NAD_binding_8) were also overrepresented in the differentially rhythmic genes between Ocflo and Beauveria. More specifically, the upregulated gene set was enriched for fungal-specific transcription factors (Fungal_trans), oxidoreductase activity (p450), and Zn_clus genes, in addition to several MFS_1 genes. Whereas, the genes downregulated at the halfway mark were enriched in Pyr_redox_2 genes in addition to MFS_1, Sugar_tr, and NAD_binding_8 genes.
+
+Next, we wanted to looked at specific subsets of these DEGs, and their functions, to identify the putative mechanisms that likely allows Ocflo to incubate (grow) inside its host for such extended periods. Of interest were three sets of DEGs, (1) Genes that are significantly up/down-regulated during infection as well as manipulation, and (2) genes that are up/down-regulated only at infection but not at manipulation, and (3) genes that are downregulated at infection but upregulated at manipulation. The first set of genes that show a consistent up/down-regulation at both infection and manipulation likely is involved in general growth and survival of the fungus inside the host. The second set of genes that are differentially expressed only at infection but not at manipulation might be important for maintaining homeostasis inside the host, maybe via parasite-host synchronization of metabolic functions, to ensure that the infected ant host can survive the long incubation period necessary for Ocflo’s life cycle. Whereas, the third set of genes that are downregulated at the halfway mark but upregulated at manipulation likely contains fungal effectors that are necessary to induce successful manipulation of host behavior (death-grip), but harmful to the host otherwise.
+
+## 8. DEGs of interest
+
+### A. Genes up/down-regulated at infection and manipulation
+
+```{r DEG_inf_manip}
+# UP in both
+up.in.both <- intersect(inf.up, manip.up)
+writeLines("Genes UP regulated at infection and manipulation.")
+up.in.both %>% 
+  check_enrichment(.,
+                 org = "ophio_cflo",
+                 bg = bg.genes,
+                 # what = "GOs",
+                 what = "pfams",
+                 expand = T) %>% 
+  # # nothing much to talk about things that have no annotations ---
+  # filter(annot_desc!="no_desc") %>%
+  # # save the results to a file
+  arrange(annot_desc)
+
+# ## Which genes?
+# up.in.both %>% 
+#   TC6_annotator() %>%
+#   view()
+
+
+# DOWN in both
+down.in.both <- intersect(inf.down, manip.down)
+writeLines("Genes DOWN regulated at infection and manipulation.")
+down.in.both %>% 
+  check_enrichment(.,
+                 org = "ophio_cflo",
+                 bg = bg.genes,
+                 what = "GOs",
+                 # what = "pfams",
+                 # what = "TMHMM",
+                 expand = T) %>% 
+  # # nothing much to talk about things that have no annotations ---
+  # filter(annot_desc!="no_desc") %>%
+  # # save the results to a file
+  arrange(annot_desc) %>% print()
+
+# ## Which genes?
+# down.in.both %>% 
+#   TC6_annotator() %>%
+#   view()
+
+```
+
+#### UP in both
+> contains three copies of PTP, the clock gene CK2, and a putative enterotoxin
+
+#### DOWN in both
+> contains a copy of PTP (which has an enterotoxin domain), and two copies of putative enterotoxins.
+
+
+### B. Genes up/down-regulated only at infection but not at manipulation
+
+```{r DEG_at_inf_not_at_manip}
+# UP/DOWN at inf only
+deg.at.inf.only <- c(setdiff(inf.up, manip.up), setdiff(inf.down, manip.down))
+
+deg.at.inf.only %>% 
+  check_enrichment(.,
+                 org = "ophio_cflo",
+                 bg = bg.genes,
+                 what = "GOs",
+                 # what = "pfams",
+                 expand = T) %>% 
+  # # nothing much to talk about things that have no annotations ---
+  filter(annot_desc!="no_desc") %>%
+  # # save the results to a file
+  arrange(annot_desc)
+
+# ## Which genes?
+# deg.at.inf.only %>%
+#   TC6_annotator() %>%
+#   view()
+
+```
+
+#### Toxins
+> contains three enterotoxins (two heat-labile enteroxins are upregulated and a putative enterotoxin is downregulated at infection), the putative aflatoxin efflux pump AFLT (downregulated), a protoplast regeneration and killer toxin resistance protein (downregulated), a gliotoxin biosynthesis protein GliK (implicated in assisting tissue penetration)[https://link.springer.com/article/10.1023/B:MYCO.0000038434.55764.16].
+
+#### Clock genes and modulators
+> contains the core fungal clock gene frequency and vivid (synonymous to ENVOY)
+
+
+### C. Genes down-regulated at infection but up-regulated at manipulation
+
+> no enriched pfams or GOs were found.
+
+```{r DOWN_inf_UP_manip}
+# UP/DOWN at inf only
+down.inf.up.manip <- intersect(inf.down, manip.up)
+
+# down.inf.up.manip %>% 
+#   check_enrichment(.,
+#                  org = "ophio_cflo",
+#                  bg = bg.genes,
+#                  what = "GOs",
+#                  # what = "pfams",
+#                  expand = T) %>% 
+#   # # nothing much to talk about things that have no annotations ---
+#   filter(annot_desc!="no_desc") %>%
+#   # # save the results to a file
+#   arrange(annot_desc) %>% view()
+
+# # Any interesting genes?
+# down.inf.up.manip %>% 
+#   TC6_annotator() %>% 
+#     # filter(control_rhy24=="yes") %>% 
+#   view()
+```
+
+
+## 9. Export genes of interst
+
+We subset all of our Ocflo genes of interest that we want to map to the gene co-expression network that we will build in part-2 (see 02_build_annotate_circadianGCN_ocflo.Rmd)
+
+Three primary sets of Ocflo genes are of interest to us:
+
+- 24h rhythmic genes (list = rhy.24.sig[[2]])
+- Genes that are classified as rhythmic in both Ocflo and Okim (list = gsoi.3[[5]])
+- Genes that show differential rhythmicity between Ocflo and Beauveria (list = gsoi.5[[c(4:5)]])
+- Genes that are differentially expressed during infection versus controls (all.DEGs)
+
+Let's collate all of these gene sets into one list and save it as a Rdata file
+
+```{r save_genes_of_interest}
+# gois.tc6 <- 
+#   list(
+#     "ocflo_rhy24" = rhy.24.sig[[2]] %>% pull(1) %>% unique(),
+#     "ocflo_okim_rhy24" = gsoi.3[[5]] %>% filter(rhy24_ocflo=="yes" & rhy24_okim=="yes") %>% pull(1) %>% unique(),
+#     "ocflo_beau_DRGs_rhy24_cluster3" = gsoi.5[[3]] %>% pull(1) %>% unique(),
+#     "ocflo_beau_DRGs_rhy24_cluster4" = gsoi.5[[4]] %>% pull(1) %>% unique(),
+#     "ocflo_DEGs_up_at_infection" = inf.up,
+#     "ocflo_DEGs_down_at_infection" = inf.down,
+#     "ocflo_DEGs_up_in_both" = up.in.both,
+#     "ocflo_DEGs_down_in_both" = down.in.both,
+#     "ocflo_DEGs_at_inf_only" = deg.at.inf.only,
+#     "ocflo_DEGs_down_inf_up_manip" = down.inf.up.manip,
+#     "ocflo_DEGs_up_at_manip" = manip.up,
+#     "ocflo_DEGs_down_at_manip" = manip.down
+#   )
+# 
+# ## save this file
+# save(gois.tc6,
+#      file = paste0(path_to_repo, "/results/genes_of_interest/goi_list.RData"))
+
+```
 
