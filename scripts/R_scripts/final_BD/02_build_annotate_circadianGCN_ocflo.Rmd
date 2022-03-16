@@ -19,6 +19,9 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(warning = F)
 knitr::opts_chunk$set(message = F)
 
+## Clean the environment and start fresh
+rm(list = ls())
+
 ## For more inspiration on customizing the html output, refer to the following:
 # https://bookdown.org/yihui/rmarkdown/html-document.html#table-of-contents
 
@@ -26,7 +29,6 @@ knitr::opts_chunk$set(message = F)
 
 ```{r housekeeping, include=FALSE}
 set.seed(420)
-rm(list = ls())
 
 #' Load the libraries
 pacman::p_load(pheatmap, dendextend, tidyverse, viridis)
@@ -1005,8 +1007,8 @@ results.gcn %>%
   # summarize(n()) %>% 
   
   ## pull rhythmic genes that are up/down-regulated
-  # filter(inf_v_control=="up" & control_rhy24=="yes") %>%
-  filter(inf_v_control=="down" & control_rhy24=="yes") %>%
+  # filter(inf_v_control=="up" & control_rhy24=="yes") %>% 
+  filter(inf_v_control=="down" & control_rhy24=="yes") %>% 
   
   
   ## run enrichments
@@ -1015,7 +1017,7 @@ results.gcn %>%
                    bg = dat[[1]],
                    what = "pfams",
                    clean = T,
-                   expand = T) %>% 
+                   expand = T) %>% view()
   
   ## run stacked zplots
   pull(gene_name) %>% 
